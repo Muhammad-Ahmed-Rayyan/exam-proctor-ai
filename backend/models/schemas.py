@@ -1,4 +1,5 @@
-from typing import Literal
+from datetime import datetime
+from typing import Literal, Optional
 
 from pydantic import BaseModel, EmailStr
 
@@ -27,3 +28,50 @@ class UserOut(BaseModel):
     name: str
     email: EmailStr
     role: Literal["student", "admin"]
+
+
+class ExamCreate(BaseModel):
+    title: str
+    duration_minutes: int
+    start_time: Optional[datetime] = None
+
+
+class ExamOut(BaseModel):
+    id: str
+    title: str
+    duration_minutes: int
+    created_by: str
+    start_time: Optional[datetime] = None
+    status: str
+    created_at: datetime
+
+
+class ExamUpdate(BaseModel):
+    title: Optional[str] = None
+    duration_minutes: Optional[int] = None
+    start_time: Optional[datetime] = None
+    status: Optional[str] = None
+
+
+class ViolationCreate(BaseModel):
+    student_id: str
+    exam_id: str
+    type: str
+
+
+class ViolationOut(BaseModel):
+    id: str
+    student_id: str
+    exam_id: str
+    type: str
+    timestamp: datetime
+
+
+class ReportOut(BaseModel):
+    id: str
+    exam_id: str
+    student_id: str
+    ai_summary: str
+    total_violations: int
+    risk_level: str
+    generated_at: datetime
