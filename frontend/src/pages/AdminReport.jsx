@@ -3,98 +3,36 @@ import { useNavigate, useParams, useLocation } from "react-router-dom";
 
 import api from "../utils/api";
 
-/* ─── Style tokens ─────────────────────────────────────────────────────── */
-const colors = {
-  bg: "#f7f7fb",
-  surface: "#ffffff",
-  border: "#e4e7ec",
-  primary: "#1c1c28",
-  muted: "#667085",
-  danger: "#b42318",
-  accent: "#4f46e5",
+const C = {
+  primary:  "#4F46E5",
+  bg:       "#F8FAFC",
+  surface:  "#FFFFFF",
+  border:   "#E2E8F0",
+  text:     "#1E293B",
+  muted:    "#64748B",
+  danger:   "#DC2626",
+  success:  "#16A34A",
+  warning:  "#D97706",
 };
 
-const pageStyle = {
-  minHeight: "100vh",
-  padding: "32px",
-  backgroundColor: colors.bg,
-  fontFamily: "'Inter', system-ui, sans-serif",
+const riskConfig = {
+  Low:    { bg: "#DCFCE7", color: "#16A34A", border: "#BBF7D0" },
+  Medium: { bg: "#FEF9C3", color: "#D97706", border: "#FDE68A" },
+  High:   { bg: "#FEE2E2", color: "#DC2626", border: "#FECACA" },
 };
 
-const cardStyle = {
-  backgroundColor: colors.surface,
-  borderRadius: "12px",
-  padding: "24px",
-  marginBottom: "20px",
-  border: `1px solid ${colors.border}`,
-  boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-};
-
-const riskBadge = (level) => {
-  const map = {
-    Low:    { bg: "#dcfce7", color: "#166534" },
-    Medium: { bg: "#fef9c3", color: "#854d0e" },
-    High:   { bg: "#fee2e2", color: "#991b1b" },
-  };
-  const style = map[level] ?? { bg: "#f2f4f7", color: "#344054" };
-  return {
-    display: "inline-block",
-    padding: "4px 16px",
-    borderRadius: "999px",
-    fontSize: "13px",
-    fontWeight: 700,
-    ...style,
-  };
-};
-
-const backBtnStyle = {
-  padding: "9px 18px",
-  borderRadius: "8px",
-  border: "none",
-  backgroundColor: colors.primary,
-  color: "#fff",
-  fontWeight: 600,
-  fontSize: "13px",
-  cursor: "pointer",
-  marginBottom: "24px",
-};
-
-const timelineItemStyle = {
-  display: "flex",
-  alignItems: "flex-start",
-  gap: "14px",
-  padding: "12px 0",
-  borderBottom: `1px solid ${colors.border}`,
-};
-
-const dotStyle = {
-  width: "10px",
-  height: "10px",
-  borderRadius: "50%",
-  backgroundColor: colors.accent,
-  marginTop: "4px",
-  flexShrink: 0,
-};
-
-/* ─── Helpers ───────────────────────────────────────────────────────────── */
 const formatType = (raw = "") =>
-  raw
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  raw.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 
 const formatTimestamp = (ts) => {
   if (!ts) return "—";
-  return new Date(ts).toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
+  return new Date(ts).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
 };
 
-/* ─── Component ─────────────────────────────────────────────────────────── */
 const AdminReport = () => {
   const { examId, studentId } = useParams();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate  = useNavigate();
+  const location  = useLocation();
 
   const examTitle = location.state?.examTitle ?? "Exam";
 
@@ -102,6 +40,7 @@ const AdminReport = () => {
   const [violations, setViolations] = useState([]);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState("");
+  const [btnHover, setBtnHover]     = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -115,114 +54,212 @@ const AdminReport = () => {
         setReport(reportRes.data);
         setViolations(violationsRes.data || []);
       } catch (err) {
-        setError(
-          err?.response?.data?.detail ??
-          "Failed to load the report. The report may not have been generated yet."
-        );
+        setError(err?.response?.data?.detail ?? "Failed to load the report. It may not have been generated yet.");
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
   }, [examId, studentId]);
 
-  return (
-    <div style={pageStyle}>
-      {/* Back button */}
-      <button style={backBtnStyle} type="button" onClick={() => navigate("/admin/dashboard")}>
-        ← Back to Dashboard
-      </button>
+  const risk = report?.risk_level;
+  const rc   = riskConfig[risk] ?? { bg: "#F1F5F9", color: C.muted, border: C.border };
 
-      {/* Page title */}
-      <div style={{ marginBottom: "24px" }}>
-        <h2 style={{ margin: 0, fontSize: "22px", fontWeight: 700 }}>
-          {examTitle} — Student Report
-        </h2>
-        <p style={{ margin: "4px 0 0", fontSize: "13px", color: colors.muted }}>
-          Student ID: {studentId}
-        </p>
+  return (
+    <div style={{ minHeight: "100vh", backgroundColor: C.bg, fontFamily: "'Inter', sans-serif" }}>
+
+      {/* ── Narrow top bar ─────────────────────────────────────────── */}
+      <div style={{
+        backgroundColor: C.surface,
+        borderBottom: `1px solid ${C.border}`,
+        padding: "0 32px",
+        height: "56px",
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+      }}>
+        <span style={{ fontSize: "18px" }}>🛡️</span>
+        <span style={{ fontWeight: 800, color: C.text, fontSize: "16px" }}>Exam Proctor AI</span>
+        <span style={{ color: C.border, margin: "0 4px" }}>›</span>
+        <span style={{ color: C.muted, fontSize: "14px" }}>Report</span>
       </div>
 
-      {/* Loading */}
-      {loading && (
-        <div style={{ ...cardStyle, color: colors.muted, textAlign: "center", padding: "48px" }}>
-          <span style={{ fontSize: "32px" }}>⏳</span>
-          <p style={{ marginTop: "12px" }}>Fetching report data…</p>
-        </div>
-      )}
+      <main style={{ maxWidth: "800px", margin: "0 auto", padding: "36px 24px" }}>
 
-      {/* Error */}
-      {!loading && error && (
-        <div style={{ ...cardStyle, borderLeft: `4px solid ${colors.danger}` }}>
-          <p style={{ margin: 0, color: colors.danger, fontWeight: 600 }}>Error</p>
-          <p style={{ margin: "6px 0 0", fontSize: "14px", color: "#333" }}>{error}</p>
-        </div>
-      )}
+        {/* Back button */}
+        <button
+          type="button"
+          onClick={() => navigate("/admin/dashboard")}
+          style={{
+            padding: "8px 16px",
+            borderRadius: "8px",
+            border: `1.5px solid ${C.border}`,
+            backgroundColor: btnHover ? "#F1F5F9" : C.surface,
+            color: C.text,
+            fontWeight: 600,
+            fontSize: "13px",
+            cursor: "pointer",
+            marginBottom: "28px",
+            transition: "background 0.15s",
+          }}
+          onMouseEnter={() => setBtnHover(true)}
+          onMouseLeave={() => setBtnHover(false)}
+        >
+          ← Back to Dashboard
+        </button>
 
-      {/* Report content */}
-      {!loading && !error && report && (
-        <>
-          {/* Summary card */}
-          <div style={cardStyle}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "12px", marginBottom: "16px" }}>
-              <div>
-                <p style={{ margin: 0, fontSize: "12px", color: colors.muted, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                  Risk Level
+        {/* Page heading */}
+        <div style={{ marginBottom: "28px" }}>
+          <h1 style={{ fontSize: "24px", fontWeight: 800, color: C.text, margin: 0 }}>
+            {examTitle}
+          </h1>
+          <p style={{ color: C.muted, fontSize: "13px", marginTop: "6px" }}>
+            Student ID: {studentId}
+          </p>
+        </div>
+
+        {/* Loading */}
+        {loading && (
+          <div style={{
+            backgroundColor: C.surface, borderRadius: "12px", padding: "60px",
+            textAlign: "center", border: `1px solid ${C.border}`,
+            boxShadow: "0 1px 3px rgba(0,0,0,0.10)",
+          }}>
+            <div style={{ fontSize: "40px", marginBottom: "16px" }}>⏳</div>
+            <p style={{ color: C.muted }}>Fetching report data…</p>
+          </div>
+        )}
+
+        {/* Error */}
+        {!loading && error && (
+          <div style={{
+            backgroundColor: "#FEF2F2", borderRadius: "12px", padding: "24px 28px",
+            border: `1px solid #FECACA`,
+            boxShadow: "0 1px 3px rgba(0,0,0,0.10)",
+          }}>
+            <p style={{ fontWeight: 700, color: C.danger, marginBottom: "6px" }}>⚠ Report Unavailable</p>
+            <p style={{ color: "#7F1D1D", fontSize: "14px", margin: 0 }}>{error}</p>
+          </div>
+        )}
+
+        {/* ── Report content ───────────────────────────────────────── */}
+        {!loading && !error && report && (
+          <>
+            {/* Stats row */}
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+              gap: "16px",
+              marginBottom: "24px",
+            }}>
+              {/* Risk badge card */}
+              <div style={{
+                backgroundColor: rc.bg,
+                border: `1px solid ${rc.border}`,
+                borderRadius: "12px",
+                padding: "20px 24px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+              }}>
+                <p style={{ margin: "0 0 6px", fontSize: "11px", fontWeight: 700, color: rc.color,
+                  textTransform: "uppercase", letterSpacing: "0.07em" }}>Risk Level</p>
+                <p style={{ margin: 0, fontSize: "26px", fontWeight: 800, color: rc.color }}>
+                  {risk ?? "—"}
                 </p>
-                <span style={riskBadge(report.risk_level)}>
-                  {report.risk_level ?? "Unknown"}
-                </span>
               </div>
-              <div style={{ textAlign: "right" }}>
-                <p style={{ margin: 0, fontSize: "12px", color: colors.muted }}>Total Violations</p>
-                <p style={{ margin: "2px 0 0", fontSize: "28px", fontWeight: 800, color: colors.primary }}>
+
+              {/* Total violations card */}
+              <div style={{
+                backgroundColor: C.surface,
+                border: `1px solid ${C.border}`,
+                borderRadius: "12px",
+                padding: "20px 24px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+              }}>
+                <p style={{ margin: "0 0 6px", fontSize: "11px", fontWeight: 700, color: C.muted,
+                  textTransform: "uppercase", letterSpacing: "0.07em" }}>Total Violations</p>
+                <p style={{ margin: 0, fontSize: "26px", fontWeight: 800, color: C.text }}>
                   {report.total_violations ?? violations.length}
                 </p>
               </div>
             </div>
-            <hr style={{ border: "none", borderTop: `1px solid ${colors.border}`, margin: "16px 0" }} />
-            <p style={{ margin: "0 0 8px", fontSize: "12px", fontWeight: 700, color: colors.muted, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-              AI-Generated Summary
-            </p>
-            <p style={{ margin: 0, fontSize: "15px", lineHeight: 1.7, color: "#1e1e2e" }}>
-              {report.ai_summary ?? "No summary available."}
-            </p>
-            {report.generated_at && (
-              <p style={{ margin: "14px 0 0", fontSize: "12px", color: colors.muted }}>
-                Generated: {formatTimestamp(report.generated_at)}
-              </p>
-            )}
-          </div>
 
-          {/* Violation timeline */}
-          <div style={cardStyle}>
-            <p style={{ margin: "0 0 16px", fontWeight: 700, fontSize: "15px" }}>
-              Violation Timeline
-              <span style={{ marginLeft: "8px", fontSize: "13px", color: colors.muted, fontWeight: 400 }}>
-                ({violations.length} event{violations.length !== 1 ? "s" : ""})
-              </span>
-            </p>
-            {violations.length === 0 ? (
-              <p style={{ color: colors.muted, fontSize: "14px", margin: 0 }}>No violations recorded.</p>
-            ) : (
-              violations.map((v) => (
-                <div key={v.id} style={timelineItemStyle}>
-                  <div style={dotStyle} />
-                  <div>
-                    <p style={{ margin: 0, fontWeight: 600, fontSize: "14px" }}>
-                      {formatType(v.type)}
-                    </p>
-                    <p style={{ margin: "2px 0 0", fontSize: "12px", color: colors.muted }}>
-                      {formatTimestamp(v.timestamp)}
-                    </p>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </>
-      )}
+            {/* AI Summary card */}
+            <div style={{
+              backgroundColor: C.surface,
+              borderRadius: "12px",
+              padding: "24px 28px",
+              marginBottom: "24px",
+              border: `1px solid ${C.border}`,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)",
+            }}>
+              <p style={{ margin: "0 0 14px", fontSize: "13px", fontWeight: 700, color: C.muted,
+                textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                🤖 AI-Generated Summary
+              </p>
+              <p style={{ margin: 0, fontSize: "15px", lineHeight: 1.75, color: C.text }}>
+                {report.ai_summary ?? "No summary available."}
+              </p>
+              {report.generated_at && (
+                <p style={{ margin: "16px 0 0", fontSize: "12px", color: C.muted }}>
+                  Generated: {formatTimestamp(report.generated_at)}
+                </p>
+              )}
+            </div>
+
+            {/* Violation timeline card */}
+            <div style={{
+              backgroundColor: C.surface,
+              borderRadius: "12px",
+              padding: "24px 28px",
+              border: `1px solid ${C.border}`,
+              boxShadow: "0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)",
+            }}>
+              <p style={{ margin: "0 0 18px", fontSize: "13px", fontWeight: 700, color: C.muted,
+                textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                Violation Timeline
+                <span style={{ marginLeft: "8px", textTransform: "none", fontWeight: 400, fontSize: "13px" }}>
+                  ({violations.length} event{violations.length !== 1 ? "s" : ""})
+                </span>
+              </p>
+
+              {violations.length === 0 ? (
+                <p style={{ color: C.muted, fontSize: "14px" }}>No violations recorded.</p>
+              ) : (
+                violations.map((v, idx) => {
+                  const isLast = idx === violations.length - 1;
+                  return (
+                    <div
+                      key={v.id}
+                      style={{
+                        display: "flex",
+                        gap: "16px",
+                        paddingBottom: isLast ? 0 : "18px",
+                        marginBottom: isLast ? 0 : "2px",
+                        borderBottom: isLast ? "none" : `1px solid ${C.border}`,
+                      }}
+                    >
+                      {/* Colored dot */}
+                      <div style={{
+                        width: "10px", height: "10px", borderRadius: "50%",
+                        backgroundColor: C.primary, marginTop: "5px", flexShrink: 0,
+                      }} />
+                      <div>
+                        <p style={{ margin: 0, fontWeight: 700, fontSize: "14px", color: C.text }}>
+                          {formatType(v.type)}
+                        </p>
+                        <p style={{ margin: "3px 0 0", fontSize: "12px", color: C.muted }}>
+                          {formatTimestamp(v.timestamp)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </>
+        )}
+      </main>
     </div>
   );
 };

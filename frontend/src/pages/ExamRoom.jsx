@@ -4,38 +4,40 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 
+/* ── Violation warning messages — unchanged ───────────────────────────── */
 const warningMessages = {
-  face_missing: "⚠️ Warning: Face not detected. Please stay in frame.",
+  face_missing:   "⚠️ Warning: Face not detected. Please stay in frame.",
   multiple_faces: "⚠️ Warning: Multiple faces detected.",
-  tab_switch: "⚠️ Warning: Tab switch detected.",
-  focus_loss: "⚠️ Warning: Please stay focused on the exam.",
+  tab_switch:     "⚠️ Warning: Tab switch detected.",
+  focus_loss:     "⚠️ Warning: Please stay focused on the exam.",
 };
 
 const ExamRoom = () => {
-  const { id } = useParams();
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { id }     = useParams();
+  const { user }   = useAuth();
+  const navigate   = useNavigate();
+  const location   = useLocation();
   const initialExam = location.state?.exam;
 
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const streamRef = useRef(null);
-  const faceDetectionRef = useRef(null);
+  /* ── Refs — unchanged ──────────────────────────────────────────────── */
+  const videoRef           = useRef(null);
+  const canvasRef          = useRef(null);
+  const streamRef          = useRef(null);
+  const faceDetectionRef   = useRef(null);
   const detectionIntervalRef = useRef(null);
-  const warningTimeoutRef = useRef(null);
-  const timerRef = useRef(null);
-  const lastPostRef = useRef({});
-  const processingRef = useRef(false);
+  const warningTimeoutRef  = useRef(null);
+  const timerRef           = useRef(null);
+  const lastPostRef        = useRef({});
+  const processingRef      = useRef(false);
 
-  const [exam, setExam] = useState(
-    initialExam && initialExam.id === id ? initialExam : null
-  );
+  /* ── State — unchanged ─────────────────────────────────────────────── */
+  const [exam, setExam]                   = useState(initialExam && initialExam.id === id ? initialExam : null);
   const [remainingSeconds, setRemainingSeconds] = useState(null);
-  const [warning, setWarning] = useState("");
-  const [webcamError, setWebcamError] = useState("");
-  const [examError, setExamError] = useState("");
+  const [warning, setWarning]             = useState("");
+  const [webcamError, setWebcamError]     = useState("");
+  const [examError, setExamError]         = useState("");
 
+  /* ── All logic — unchanged ─────────────────────────────────────────── */
   const triggerWarning = (type) => {
     const message = warningMessages[type];
     if (!message) return;
@@ -51,18 +53,11 @@ const ExamRoom = () => {
     lastPostRef.current[type] = now;
     if (!user?.user_id || !id) return;
     try {
-      await api.post("/violations/", {
-        student_id: user.user_id,
-        exam_id: id,
-        type,
-      });
+      await api.post("/violations/", { student_id: user.user_id, exam_id: id, type });
     } catch (err) {}
   };
 
-  const triggerViolation = (type) => {
-    triggerWarning(type);
-    postViolation(type);
-  };
+  const triggerViolation = (type) => { triggerWarning(type); postViolation(type); };
 
   useEffect(() => {
     const fetchExam = async () => {
@@ -112,67 +107,45 @@ const ExamRoom = () => {
 
   useEffect(() => {
     if (webcamError) return;
-
     const initFaceDetection = () => {
-      if (!window.FaceDetection) {
-        setTimeout(initFaceDetection, 500);
-        return;
-      }
-
+      if (!window.FaceDetection) { setTimeout(initFaceDetection, 500); return; }
       const faceDetection = new window.FaceDetection({
-        locateFile: (file) =>
-          `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`,
+        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`,
       });
-
-      faceDetection.setOptions({
-        modelSelection: 0,
-        minDetectionConfidence: 0.5,
-      });
-
+      faceDetection.setOptions({ modelSelection: 0, minDetectionConfidence: 0.5 });
       faceDetection.onResults((results) => {
         const canvas = canvasRef.current;
-        const video = videoRef.current;
+        const video  = videoRef.current;
         if (!canvas || !video) return;
         const ctx = canvas.getContext("2d");
-        canvas.width = video.videoWidth;
+        canvas.width  = video.videoWidth;
         canvas.height = video.videoHeight;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
         const detections = results.detections || [];
-        const faceCount = detections.length;
-
-        if (faceCount === 0) triggerViolation("face_missing");
+        const faceCount  = detections.length;
+        if (faceCount === 0)  triggerViolation("face_missing");
         else if (faceCount >= 2) triggerViolation("multiple_faces");
-
-        ctx.lineWidth = 2;
+        ctx.lineWidth   = 2;
         ctx.strokeStyle = "#22c55e";
         detections.forEach((detection) => {
           const box = detection.locationData?.relativeBoundingBox;
           if (!box) return;
-          const x = box.xMin * canvas.width;
-          const y = box.yMin * canvas.height;
+          const x = box.xMin  * canvas.width;
+          const y = box.yMin  * canvas.height;
           const w = box.width * canvas.width;
           const h = box.height * canvas.height;
           ctx.strokeRect(x, y, w, h);
         });
       });
-
       faceDetectionRef.current = faceDetection;
-
       detectionIntervalRef.current = setInterval(async () => {
         const video = videoRef.current;
         if (!video || video.readyState < 2 || processingRef.current) return;
-        try {
-          processingRef.current = true;
-          await faceDetection.send({ image: video });
-        } finally {
-          processingRef.current = false;
-        }
+        try { processingRef.current = true; await faceDetection.send({ image: video }); }
+        finally { processingRef.current = false; }
       }, 2000);
     };
-
     initFaceDetection();
-
     return () => {
       if (detectionIntervalRef.current) clearInterval(detectionIntervalRef.current);
       if (faceDetectionRef.current?.close) faceDetectionRef.current.close();
@@ -180,14 +153,10 @@ const ExamRoom = () => {
   }, [webcamError]);
 
   useEffect(() => {
-    const handleVisibility = () => {
-      if (document.hidden) triggerViolation("tab_switch");
-    };
+    const handleVisibility = () => { if (document.hidden) triggerViolation("tab_switch"); };
     const handleBlur = () => triggerViolation("focus_loss");
-
     document.addEventListener("visibilitychange", handleVisibility);
     window.addEventListener("blur", handleBlur);
-
     return () => {
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("blur", handleBlur);
@@ -196,8 +165,8 @@ const ExamRoom = () => {
 
   useEffect(() => {
     return () => {
-      if (warningTimeoutRef.current) clearTimeout(warningTimeoutRef.current);
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (warningTimeoutRef.current)  clearTimeout(warningTimeoutRef.current);
+      if (timerRef.current)           clearInterval(timerRef.current);
       if (detectionIntervalRef.current) clearInterval(detectionIntervalRef.current);
       if (streamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
     };
@@ -212,57 +181,149 @@ const ExamRoom = () => {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
+  /* ── Timer color ────────────────────────────────────────────────────── */
+  const timerColor =
+    remainingSeconds !== null && remainingSeconds < 300
+      ? "#DC2626"
+      : remainingSeconds !== null && remainingSeconds < 600
+      ? "#D97706"
+      : "#4F46E5";
+
   return (
-    <div style={{ minHeight: "100vh", backgroundColor: "#f7f7fb" }}>
+    <div style={{ minHeight: "100vh", backgroundColor: "#F8FAFC", fontFamily: "'Inter', sans-serif" }}>
+
+      {/* ── Warning banner (slide-in) ─────────────────────────────── */}
       {warning && (
         <div style={{
-          backgroundColor: "#b42318", color: "#ffffff",
-          padding: "12px 24px", textAlign: "center", fontWeight: 600,
+          backgroundColor: "#DC2626",
+          color: "#fff",
+          padding: "14px 24px",
+          textAlign: "center",
+          fontWeight: 700,
+          fontSize: "15px",
+          animation: "slideDown 0.25s ease",
+          boxShadow: "0 2px 8px rgba(220,38,38,0.35)",
+          letterSpacing: "0.01em",
         }}>
           {warning}
         </div>
       )}
-      <div style={{ padding: "24px 32px" }}>
-        <div style={{
-          display: "flex", justifyContent: "space-between",
-          alignItems: "center", marginBottom: "24px",
-        }}>
-          <div>
-            <h2 style={{ margin: 0 }}>{exam?.title || "Exam Session"}</h2>
-            {examError && <p style={{ color: "#b42318", margin: "6px 0 0" }}>{examError}</p>}
-          </div>
-          <div style={{
-            backgroundColor: "#ffffff", padding: "12px 16px",
-            borderRadius: "10px", boxShadow: "0 8px 18px rgba(0,0,0,0.06)", fontWeight: 600,
-          }}>
-            Time Remaining: {formatTime(remainingSeconds)}
-          </div>
+
+      {/* ── Top bar ──────────────────────────────────────────────── */}
+      <div style={{
+        backgroundColor: "#FFFFFF",
+        borderBottom: "1px solid #E2E8F0",
+        padding: "0 32px",
+        height: "60px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+      }}>
+        <div>
+          <span style={{ fontSize: "18px", marginRight: "8px" }}>🛡️</span>
+          <span style={{ fontWeight: 800, fontSize: "16px", color: "#1E293B" }}>
+            {exam?.title ?? "Exam Session"}
+          </span>
+          {examError && (
+            <span style={{ marginLeft: "12px", fontSize: "13px", color: "#DC2626" }}>
+              {examError}
+            </span>
+          )}
         </div>
 
+        {/* Styled timer badge */}
         <div style={{
-          backgroundColor: "#ffffff", borderRadius: "12px", padding: "48px",
-          minHeight: "50vh", display: "flex", alignItems: "center",
-          justifyContent: "center", fontSize: "20px", color: "#667085",
-          boxShadow: "0 10px 24px rgba(0,0,0,0.06)",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          padding: "8px 18px",
+          borderRadius: "999px",
+          border: `2px solid ${timerColor}`,
+          backgroundColor: `${timerColor}12`,
         }}>
-          Exam in Progress
+          <span style={{ fontSize: "14px" }}>⏱</span>
+          <span style={{ fontWeight: 800, fontSize: "18px", color: timerColor, fontVariantNumeric: "tabular-nums" }}>
+            {formatTime(remainingSeconds)}
+          </span>
+        </div>
+      </div>
+
+      {/* ── Main content ─────────────────────────────────────────── */}
+      <div style={{ padding: "28px 32px", maxWidth: "900px", margin: "0 auto" }}>
+
+        {/* Exam-in-progress placeholder card */}
+        <div style={{
+          backgroundColor: "#FFFFFF",
+          borderRadius: "12px",
+          padding: "64px 48px",
+          minHeight: "52vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          textAlign: "center",
+          border: "1px solid #E2E8F0",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)",
+        }}>
+          {/* Pulsing dot */}
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
+            <span style={{
+              display: "inline-block",
+              width: "12px",
+              height: "12px",
+              borderRadius: "50%",
+              backgroundColor: "#16A34A",
+              animation: "pulse 1.8s ease-in-out infinite",
+            }} />
+            <span style={{ fontSize: "13px", fontWeight: 700, color: "#16A34A", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+              Live Session
+            </span>
+          </div>
+          <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#1E293B", margin: "0 0 10px" }}>
+            Exam in Progress
+          </h2>
+          <p style={{ color: "#64748B", fontSize: "15px", maxWidth: "380px", lineHeight: 1.6 }}>
+            Your session is being monitored. Stay in frame and keep this tab active.
+          </p>
         </div>
 
-        <div style={{ marginTop: "32px", textAlign: "center" }}>
-          <button onClick={handleSubmit} type="button" style={{
-            padding: "12px 24px", borderRadius: "8px", border: "none",
-            backgroundColor: "#1c1c28", color: "#ffffff", fontWeight: 600, cursor: "pointer",
-          }}>
+        {/* Submit button */}
+        <div style={{ marginTop: "28px", textAlign: "center" }}>
+          <button
+            onClick={handleSubmit}
+            type="button"
+            style={{
+              padding: "13px 36px",
+              borderRadius: "8px",
+              border: "none",
+              backgroundColor: "#4F46E5",
+              color: "#fff",
+              fontWeight: 700,
+              fontSize: "15px",
+              cursor: "pointer",
+              boxShadow: "0 4px 14px rgba(79,70,229,0.3)",
+              transition: "background 0.15s",
+            }}
+          >
             Submit Exam
           </button>
         </div>
       </div>
 
+      {/* ── Fixed webcam frame ────────────────────────────────────── */}
       <div style={{
-        position: "fixed", top: "24px", right: "24px",
-        width: "260px", height: "195px", borderRadius: "12px",
-        overflow: "hidden", backgroundColor: "#111827",
-        boxShadow: "0 8px 18px rgba(0,0,0,0.2)",
+        position: "fixed",
+        bottom: "28px",
+        right: "28px",
+        width: "240px",
+        height: "180px",
+        borderRadius: "14px",
+        overflow: "hidden",
+        backgroundColor: "#111827",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.30)",
+        border: "3px solid #FFFFFF",
+        outline: "1px solid #E2E8F0",
       }}>
         <div style={{ position: "relative", width: "100%", height: "100%" }}>
           <video ref={videoRef} autoPlay playsInline muted style={{
@@ -273,12 +334,30 @@ const ExamRoom = () => {
             position: "absolute", top: 0, left: 0,
             width: "100%", height: "100%",
           }} />
+
+          {/* Camera label */}
+          <div style={{
+            position: "absolute", bottom: 0, left: 0, right: 0,
+            padding: "6px 10px",
+            background: "linear-gradient(to top, rgba(0,0,0,0.65), transparent)",
+            display: "flex", alignItems: "center", gap: "6px",
+          }}>
+            <span style={{
+              width: "6px", height: "6px", borderRadius: "50%",
+              backgroundColor: webcamError ? "#DC2626" : "#22c55e",
+              display: "inline-block",
+            }} />
+            <span style={{ color: "#fff", fontSize: "11px", fontWeight: 600 }}>
+              {webcamError ? "Camera Error" : "Camera Active"}
+            </span>
+          </div>
+
           {webcamError && (
             <div style={{
-              position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.75)",
-              color: "#ffffff", display: "flex", alignItems: "center",
+              position: "absolute", inset: 0, backgroundColor: "rgba(0,0,0,0.78)",
+              color: "#fff", display: "flex", alignItems: "center",
               justifyContent: "center", padding: "12px",
-              textAlign: "center", fontSize: "13px",
+              textAlign: "center", fontSize: "12px", lineHeight: 1.5,
             }}>
               {webcamError}
             </div>
