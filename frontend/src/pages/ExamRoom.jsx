@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import * as faceapi from "face-api.js";
 
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
@@ -30,12 +31,14 @@ const ExamRoom = () => {
   const lastPostRef        = useRef({});
   const processingRef      = useRef(false);
 
-  /* ── State — unchanged ─────────────────────────────────────────────── */
+  /* ── State ─────────────────────────────────────────────────────────── */
   const [exam, setExam]                   = useState(initialExam && initialExam.id === id ? initialExam : null);
   const [remainingSeconds, setRemainingSeconds] = useState(null);
   const [warning, setWarning]             = useState("");
   const [webcamError, setWebcamError]     = useState("");
   const [examError, setExamError]         = useState("");
+  const [faceCount, setFaceCount]         = useState(null);
+  const [modelLoading, setModelLoading]   = useState(true);
 
   /* ── All logic — unchanged ─────────────────────────────────────────── */
   const triggerWarning = (type) => {
@@ -107,48 +110,68 @@ const ExamRoom = () => {
 
   useEffect(() => {
     if (webcamError) return;
-    const initFaceDetection = () => {
-      if (!window.FaceDetection) { setTimeout(initFaceDetection, 500); return; }
-      const faceDetection = new window.FaceDetection({
-        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_detection/${file}`,
-      });
-      faceDetection.setOptions({ modelSelection: 0, minDetectionConfidence: 0.5 });
-      faceDetection.onResults((results) => {
-        const canvas = canvasRef.current;
-        const video  = videoRef.current;
-        if (!canvas || !video) return;
-        const ctx = canvas.getContext("2d");
-        canvas.width  = video.videoWidth;
-        canvas.height = video.videoHeight;
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const detections = results.detections || [];
-        const faceCount  = detections.length;
-        if (faceCount === 0)  triggerViolation("face_missing");
-        else if (faceCount >= 2) triggerViolation("multiple_faces");
-        ctx.lineWidth   = 2;
-        ctx.strokeStyle = "#22c55e";
-        detections.forEach((detection) => {
-          const box = detection.locationData?.relativeBoundingBox;
-          if (!box) return;
-          const x = box.xMin  * canvas.width;
-          const y = box.yMin  * canvas.height;
-          const w = box.width * canvas.width;
-          const h = box.height * canvas.height;
-          ctx.strokeRect(x, y, w, h);
-        });
-      });
-      faceDetectionRef.current = faceDetection;
+
+    let cancelled = false;
+
+    const initFaceDetection = async () => {
+      try {
+        // Load TinyFaceDetector model weights from /public/models
+        await faceapi.nets.tinyFaceDetector.loadFromUri("/models");
+      } catch (err) {
+        return; // If model fails to load, silently skip detection
+      }
+
+      if (cancelled) return;
+      setModelLoading(false);
+
       detectionIntervalRef.current = setInterval(async () => {
-        const video = videoRef.current;
-        if (!video || video.readyState < 2 || processingRef.current) return;
-        try { processingRef.current = true; await faceDetection.send({ image: video }); }
-        finally { processingRef.current = false; }
+        const video  = videoRef.current;
+        const canvas = canvasRef.current;
+        if (!video || !canvas || video.readyState < 2 || processingRef.current) return;
+
+        try {
+          processingRef.current = true;
+
+          const detections = await faceapi.detectAllFaces(
+            video,
+            new faceapi.TinyFaceDetectorOptions()
+          );
+
+          if (cancelled) return;
+
+          const count = detections.length;
+          setFaceCount(count);
+
+          if (count === 0)       triggerViolation("face_missing");
+          else if (count >= 2)   triggerViolation("multiple_faces");
+
+          // Sync canvas dimensions to the live video feed
+          canvas.width  = video.videoWidth;
+          canvas.height = video.videoHeight;
+
+          const ctx = canvas.getContext("2d");
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          // Draw green bounding boxes
+          ctx.lineWidth   = 2;
+          ctx.strokeStyle = "#22c55e";
+          detections.forEach((det) => {
+            const { x, y, width, height } = det.box;
+            ctx.strokeRect(x, y, width, height);
+          });
+        } catch (_err) {
+          // Swallow per-frame detection errors
+        } finally {
+          processingRef.current = false;
+        }
       }, 2000);
     };
+
     initFaceDetection();
+
     return () => {
+      cancelled = true;
       if (detectionIntervalRef.current) clearInterval(detectionIntervalRef.current);
-      if (faceDetectionRef.current?.close) faceDetectionRef.current.close();
     };
   }, [webcamError]);
 
@@ -251,6 +274,30 @@ const ExamRoom = () => {
 
       {/* ── Main content ─────────────────────────────────────────── */}
       <div style={{ padding: "28px 32px", maxWidth: "900px", margin: "0 auto" }}>
+
+        {/* Face detection status indicator */}
+        <div style={{
+          backgroundColor: modelLoading ? "#FEF9C3" : faceCount === 0 ? "#FEE2E2" : faceCount >= 2 ? "#FEE2E2" : "#DCFCE7",
+          padding: "10px 16px",
+          borderRadius: "10px",
+          fontWeight: 600,
+          fontSize: "13px",
+          marginBottom: "16px",
+          color: modelLoading ? "#854D0E" : faceCount === 0 ? "#991B1B" : faceCount >= 2 ? "#991B1B" : "#166534",
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+        }}>
+          {modelLoading
+            ? "⏳ Loading face detection model…"
+            : faceCount === null
+            ? "⏳ Starting detection…"
+            : faceCount === 0
+            ? "⚠️ No face detected"
+            : faceCount === 1
+            ? "✅ Face detected"
+            : `⚠️ ${faceCount} faces detected`}
+        </div>
 
         {/* Exam-in-progress placeholder card */}
         <div style={{
