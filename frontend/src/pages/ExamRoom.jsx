@@ -5,7 +5,7 @@ import * as faceapi from "face-api.js";
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
 
-/* ── Violation warning messages — unchanged ───────────────────────────── */
+/* ── Violation warning messages ───────────────────────────────────────── */
 const warningMessages = {
   face_missing:   "⚠️ Warning: Face not detected. Please stay in frame.",
   multiple_faces: "⚠️ Warning: Multiple faces detected.",
@@ -20,11 +20,10 @@ const ExamRoom = () => {
   const location   = useLocation();
   const initialExam = location.state?.exam;
 
-  /* ── Refs — unchanged ──────────────────────────────────────────────── */
+  /* ── Refs ──────────────────────────────────────────────────────────── */
   const videoRef           = useRef(null);
   const canvasRef          = useRef(null);
   const streamRef          = useRef(null);
-  const faceDetectionRef   = useRef(null);
   const detectionIntervalRef = useRef(null);
   const warningTimeoutRef  = useRef(null);
   const timerRef           = useRef(null);
@@ -40,7 +39,7 @@ const ExamRoom = () => {
   const [faceCount, setFaceCount]         = useState(null);
   const [modelLoading, setModelLoading]   = useState(true);
 
-  /* ── All logic — unchanged ─────────────────────────────────────────── */
+  /* ── Violation helpers ─────────────────────────────────────────────── */
   const triggerWarning = (type) => {
     const message = warningMessages[type];
     if (!message) return;
@@ -62,6 +61,7 @@ const ExamRoom = () => {
 
   const triggerViolation = (type) => { triggerWarning(type); postViolation(type); };
 
+  /* ── Fetch exam details ───────────────────────────────────────────── */
   useEffect(() => {
     const fetchExam = async () => {
       try {
@@ -81,6 +81,7 @@ const ExamRoom = () => {
     if (!exam && id) fetchExam();
   }, [exam, id]);
 
+  /* ── Exam timer ────────────────────────────────────────────────────── */
   useEffect(() => {
     if (!exam?.duration_minutes) return;
     const totalSeconds = Number(exam.duration_minutes) * 60;
@@ -95,6 +96,7 @@ const ExamRoom = () => {
     }, 1000);
   }, [exam?.duration_minutes]);
 
+  /* ── Webcam ────────────────────────────────────────────────────────── */
   useEffect(() => {
     const startWebcam = async () => {
       try {
@@ -108,6 +110,7 @@ const ExamRoom = () => {
     startWebcam();
   }, []);
 
+  /* ── Face detection (face-api.js) ─────────────────────────────────── */
   useEffect(() => {
     if (webcamError) return;
 
@@ -115,10 +118,9 @@ const ExamRoom = () => {
 
     const initFaceDetection = async () => {
       try {
-        // Load TinyFaceDetector model weights from /public/models
         await faceapi.nets.tinyFaceDetector.loadFromUri("/models");
       } catch (err) {
-        return; // If model fails to load, silently skip detection
+        return;
       }
 
       if (cancelled) return;
@@ -145,14 +147,12 @@ const ExamRoom = () => {
           if (count === 0)       triggerViolation("face_missing");
           else if (count >= 2)   triggerViolation("multiple_faces");
 
-          // Sync canvas dimensions to the live video feed
           canvas.width  = video.videoWidth;
           canvas.height = video.videoHeight;
 
           const ctx = canvas.getContext("2d");
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          // Draw green bounding boxes
           ctx.lineWidth   = 2;
           ctx.strokeStyle = "#22c55e";
           detections.forEach((det) => {
@@ -160,7 +160,7 @@ const ExamRoom = () => {
             ctx.strokeRect(x, y, width, height);
           });
         } catch (_err) {
-          // Swallow per-frame detection errors
+          // swallow per-frame errors
         } finally {
           processingRef.current = false;
         }
@@ -175,6 +175,7 @@ const ExamRoom = () => {
     };
   }, [webcamError]);
 
+  /* ── Tab switch / focus loss ──────────────────────────────────────── */
   useEffect(() => {
     const handleVisibility = () => { if (document.hidden) triggerViolation("tab_switch"); };
     const handleBlur = () => triggerViolation("focus_loss");
@@ -186,6 +187,7 @@ const ExamRoom = () => {
     };
   }, []);
 
+  /* ── Cleanup ───────────────────────────────────────────────────────── */
   useEffect(() => {
     return () => {
       if (warningTimeoutRef.current)  clearTimeout(warningTimeoutRef.current);
@@ -204,7 +206,6 @@ const ExamRoom = () => {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  /* ── Timer color ────────────────────────────────────────────────────── */
   const timerColor =
     remainingSeconds !== null && remainingSeconds < 300
       ? "#DC2626"
@@ -215,7 +216,6 @@ const ExamRoom = () => {
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#F8FAFC", fontFamily: "'Inter', sans-serif" }}>
 
-      {/* ── Warning banner (slide-in) ─────────────────────────────── */}
       {warning && (
         <div style={{
           backgroundColor: "#DC2626",
@@ -232,7 +232,6 @@ const ExamRoom = () => {
         </div>
       )}
 
-      {/* ── Top bar ──────────────────────────────────────────────── */}
       <div style={{
         backgroundColor: "#FFFFFF",
         borderBottom: "1px solid #E2E8F0",
@@ -255,7 +254,6 @@ const ExamRoom = () => {
           )}
         </div>
 
-        {/* Styled timer badge */}
         <div style={{
           display: "flex",
           alignItems: "center",
@@ -272,10 +270,8 @@ const ExamRoom = () => {
         </div>
       </div>
 
-      {/* ── Main content ─────────────────────────────────────────── */}
       <div style={{ padding: "28px 32px", maxWidth: "900px", margin: "0 auto" }}>
 
-        {/* Face detection status indicator */}
         <div style={{
           backgroundColor: modelLoading ? "#FEF9C3" : faceCount === 0 ? "#FEE2E2" : faceCount >= 2 ? "#FEE2E2" : "#DCFCE7",
           padding: "10px 16px",
@@ -299,7 +295,6 @@ const ExamRoom = () => {
             : `⚠️ ${faceCount} faces detected`}
         </div>
 
-        {/* Exam-in-progress placeholder card */}
         <div style={{
           backgroundColor: "#FFFFFF",
           borderRadius: "12px",
@@ -313,7 +308,6 @@ const ExamRoom = () => {
           border: "1px solid #E2E8F0",
           boxShadow: "0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)",
         }}>
-          {/* Pulsing dot */}
           <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "20px" }}>
             <span style={{
               display: "inline-block",
@@ -335,7 +329,6 @@ const ExamRoom = () => {
           </p>
         </div>
 
-        {/* Submit button */}
         <div style={{ marginTop: "28px", textAlign: "center" }}>
           <button
             onClick={handleSubmit}
@@ -358,7 +351,6 @@ const ExamRoom = () => {
         </div>
       </div>
 
-      {/* ── Fixed webcam frame ────────────────────────────────────── */}
       <div style={{
         position: "fixed",
         bottom: "28px",
@@ -382,7 +374,6 @@ const ExamRoom = () => {
             width: "100%", height: "100%",
           }} />
 
-          {/* Camera label */}
           <div style={{
             position: "absolute", bottom: 0, left: 0, right: 0,
             padding: "6px 10px",
