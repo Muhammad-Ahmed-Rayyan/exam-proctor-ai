@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminReport from "./pages/AdminReport";
+import CreateExam from "./pages/CreateExam";
 import ExamRoom from "./pages/ExamRoom";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
@@ -67,6 +68,14 @@ const AppRoutes = () => (
       element={
         <AdminRoute>
           <AdminReport />
+        </AdminRoute>
+      }
+    />
+    <Route
+      path="/admin/create-exam"
+      element={
+        <AdminRoute>
+          <CreateExam />
         </AdminRoute>
       }
     />

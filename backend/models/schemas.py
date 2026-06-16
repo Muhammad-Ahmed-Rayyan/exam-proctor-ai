@@ -75,3 +75,67 @@ class ReportOut(BaseModel):
     total_violations: int
     risk_level: str
     generated_at: datetime
+
+
+# ── Questions ──────────────────────────────────────────────────────────────
+
+class QuestionCreate(BaseModel):
+    question_text: str
+    option_a: str
+    option_b: str
+    option_c: str
+    option_d: str
+    correct_option: Literal["A", "B", "C", "D"]
+
+
+class QuestionOut(BaseModel):
+    """Returned to students — correct_option intentionally omitted."""
+    id: str
+    exam_id: str
+    question_text: str
+    option_a: str
+    option_b: str
+    option_c: str
+    option_d: str
+
+
+class QuestionOutAdmin(BaseModel):
+    """Returned to admins — includes correct_option."""
+    id: str
+    exam_id: str
+    question_text: str
+    option_a: str
+    option_b: str
+    option_c: str
+    option_d: str
+    correct_option: Literal["A", "B", "C", "D"]
+
+
+# ── Answers ────────────────────────────────────────────────────────────────
+
+class AnswerSubmit(BaseModel):
+    exam_id: str
+    question_id: str
+    selected_option: Literal["A", "B", "C", "D"]
+
+
+class AnswerOut(BaseModel):
+    id: str
+    student_id: str
+    exam_id: str
+    question_id: str
+    selected_option: Literal["A", "B", "C", "D"]
+    submitted_at: datetime
+
+
+# ── Combined result ────────────────────────────────────────────────────────
+
+class ExamResultOut(BaseModel):
+    exam_id: str
+    student_id: str
+    total_questions: int
+    correct_answers: int
+    score_percent: float
+    violations: list
+    ai_summary: Optional[str] = None
+    risk_level: Optional[str] = None

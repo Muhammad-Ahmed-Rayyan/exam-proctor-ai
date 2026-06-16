@@ -39,6 +39,11 @@ const ExamRoom = () => {
   const [faceCount, setFaceCount]         = useState(null);
   const [modelLoading, setModelLoading]   = useState(true);
 
+  /* ── Quiz state (additive) ─────────────────────────────────────────── */
+  const [questions, setQuestions]         = useState([]);
+  const [answers, setAnswers]             = useState({});   // { [question_id]: selected_option }
+  const [submitted, setSubmitted]         = useState(false);
+
   /* ── Violation helpers ─────────────────────────────────────────────── */
   const triggerWarning = (type) => {
     const message = warningMessages[type];
@@ -80,6 +85,20 @@ const ExamRoom = () => {
     };
     if (!exam && id) fetchExam();
   }, [exam, id]);
+
+  /* ── Fetch questions (additive) ──────────────────────────────────────── */
+  useEffect(() => {
+    if (!id) return;
+    const fetchQuestions = async () => {
+      try {
+        const res = await api.get(`/exams/${id}/questions`);
+        setQuestions(res.data || []);
+      } catch {
+        // Non-fatal: quiz panel will just be empty
+      }
+    };
+    fetchQuestions();
+  }, [id]);
 
   /* ── Exam timer ────────────────────────────────────────────────────── */
   useEffect(() => {
@@ -197,7 +216,22 @@ const ExamRoom = () => {
     };
   }, []);
 
-  const handleSubmit = () => navigate("/student/dashboard");
+  /* ── Quiz answer handler (additive) ─────────────────────────────────── */
+  const handleAnswer = async (questionId, selectedOption) => {
+    if (submitted) return;
+    setAnswers((prev) => ({ ...prev, [questionId]: selectedOption }));
+    try {
+      await api.post("/answers/", {
+        exam_id:         id,
+        question_id:     questionId,
+        selected_option: selectedOption,
+      });
+    } catch {
+      // Auto-save failure is silent; local state already updated
+    }
+  };
+
+  const handleSubmit = () => setSubmitted(true);
 
   const formatTime = (seconds) => {
     if (seconds === null) return "--:--";
@@ -270,7 +304,19 @@ const ExamRoom = () => {
         </div>
       </div>
 
-      <div style={{ padding: "28px 32px", maxWidth: "900px", margin: "0 auto" }}>
+      {/* ── Main two-column layout (status + quiz) ─────────────────── */}
+      <div style={{
+        padding: "28px 32px",
+        maxWidth: "1200px",
+        margin: "0 auto",
+        display: "grid",
+        gridTemplateColumns: questions.length > 0 ? "1fr 1fr" : "1fr",
+        gap: "24px",
+        alignItems: "start",
+      }}>
+
+        {/* ── Left: proctoring status + submit ─────────────────────── */}
+        <div>
 
         <div style={{
           backgroundColor: modelLoading ? "#FEF9C3" : faceCount === 0 ? "#FEE2E2" : faceCount >= 2 ? "#FEE2E2" : "#DCFCE7",
@@ -326,29 +372,142 @@ const ExamRoom = () => {
           </h2>
           <p style={{ color: "#64748B", fontSize: "15px", maxWidth: "380px", lineHeight: 1.6 }}>
             Your session is being monitored. Stay in frame and keep this tab active.
-          </p>
+            </p>
+          </div>
+
+          {/* Submit button */}
+          <div style={{ marginTop: "28px", textAlign: "center" }}>
+            {submitted ? (
+              <div style={{
+                padding: "20px 24px", borderRadius: "12px",
+                backgroundColor: "#DCFCE7", border: "1px solid #BBF7D0",
+                textAlign: "center",
+              }}>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: "16px", color: "#166534" }}>✅ Exam Submitted</p>
+                <p style={{ margin: "6px 0 0", fontSize: "13px", color: "#166534" }}>
+                  Your answers have been saved. You may now close this tab.
+                </p>
+              </div>
+            ) : (
+              <button
+                onClick={handleSubmit}
+                type="button"
+                style={{
+                  padding: "13px 36px", borderRadius: "8px", border: "none",
+                  backgroundColor: "#4F46E5", color: "#fff", fontWeight: 700,
+                  fontSize: "15px", cursor: "pointer",
+                  boxShadow: "0 4px 14px rgba(79,70,229,0.3)", transition: "background 0.15s",
+                }}
+              >
+                Submit Exam
+              </button>
+            )}
+          </div>
         </div>
 
-        <div style={{ marginTop: "28px", textAlign: "center" }}>
-          <button
-            onClick={handleSubmit}
-            type="button"
-            style={{
-              padding: "13px 36px",
-              borderRadius: "8px",
-              border: "none",
-              backgroundColor: "#4F46E5",
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: "15px",
-              cursor: "pointer",
-              boxShadow: "0 4px 14px rgba(79,70,229,0.3)",
-              transition: "background 0.15s",
-            }}
-          >
-            Submit Exam
-          </button>
-        </div>
+        {/* ── Right: Quiz panel (only rendered if questions exist) ──── */}
+        {questions.length > 0 && (
+          <div style={{
+            backgroundColor: "#FFFFFF",
+            borderRadius: "12px",
+            border: "1px solid #E2E8F0",
+            boxShadow: "0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)",
+            overflow: "hidden",
+            maxHeight: "78vh",
+            display: "flex",
+            flexDirection: "column",
+          }}>
+            {/* Quiz header */}
+            <div style={{
+              padding: "16px 20px",
+              borderBottom: "1px solid #E2E8F0",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              backgroundColor: "#F8FAFC",
+            }}>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: "14px", color: "#1E293B" }}>📝 Quiz</p>
+              <span style={{
+                fontSize: "12px", fontWeight: 600, padding: "3px 10px",
+                borderRadius: "999px", backgroundColor: "#EEF2FF", color: "#4F46E5",
+              }}>
+                {Object.keys(answers).length}/{questions.length} answered
+              </span>
+            </div>
+
+            {/* Scrollable questions list */}
+            <div style={{ overflowY: "auto", padding: "16px 20px", flex: 1 }}>
+              {questions.map((q, idx) => {
+                const selected  = answers[q.id];
+                const isAnswered = !!selected;
+                const optionMap = {
+                  A: q.option_a, B: q.option_b,
+                  C: q.option_c, D: q.option_d,
+                };
+                return (
+                  <div
+                    key={q.id}
+                    style={{
+                      marginBottom: idx < questions.length - 1 ? "20px" : 0,
+                      paddingBottom: idx < questions.length - 1 ? "20px" : 0,
+                      borderBottom: idx < questions.length - 1 ? "1px solid #E2E8F0" : "none",
+                    }}
+                  >
+                    <p style={{
+                      margin: "0 0 10px", fontSize: "13px", fontWeight: 700, color: "#1E293B",
+                      display: "flex", alignItems: "flex-start", gap: "6px",
+                    }}>
+                      <span style={{
+                        minWidth: "22px", height: "22px", borderRadius: "50%",
+                        backgroundColor: isAnswered ? "#4F46E5" : "#E2E8F0",
+                        color: isAnswered ? "#fff" : "#64748B",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: "11px", fontWeight: 800, flexShrink: 0, marginTop: "1px",
+                      }}>
+                        {isAnswered ? "✓" : idx + 1}
+                      </span>
+                      {q.question_text}
+                    </p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "6px", paddingLeft: "28px" }}>
+                      {["A", "B", "C", "D"].map((letter) => (
+                        <label
+                          key={letter}
+                          style={{
+                            display: "flex", alignItems: "center", gap: "8px",
+                            padding: "7px 12px", borderRadius: "8px", cursor: submitted ? "not-allowed" : "pointer",
+                            border: `1.5px solid ${selected === letter ? "#4F46E5" : "#E2E8F0"}`,
+                            backgroundColor: selected === letter ? "#EEF2FF" : "#FAFAFA",
+                            transition: "all 0.12s",
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name={`q-${q.id}`}
+                            value={letter}
+                            checked={selected === letter}
+                            onChange={() => handleAnswer(q.id, letter)}
+                            disabled={submitted}
+                            style={{ accentColor: "#4F46E5", flexShrink: 0 }}
+                          />
+                          <span style={{
+                            fontSize: "12px", fontWeight: 700,
+                            color: selected === letter ? "#4F46E5" : "#94A3B8",
+                            minWidth: "14px",
+                          }}>
+                            {letter}
+                          </span>
+                          <span style={{ fontSize: "13px", color: selected === letter ? "#4F46E5" : "#1E293B", fontWeight: selected === letter ? 600 : 400 }}>
+                            {optionMap[letter]}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <div style={{

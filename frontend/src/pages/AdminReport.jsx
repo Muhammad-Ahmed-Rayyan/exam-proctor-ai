@@ -38,6 +38,7 @@ const AdminReport = () => {
 
   const [report, setReport]         = useState(null);
   const [violations, setViolations] = useState([]);
+  const [examResult, setExamResult] = useState(null);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState("");
   const [btnHover, setBtnHover]     = useState(false);
@@ -47,12 +48,14 @@ const AdminReport = () => {
       setLoading(true);
       setError("");
       try {
-        const [reportRes, violationsRes] = await Promise.all([
+        const [reportRes, violationsRes, resultsRes] = await Promise.all([
           api.get(`/report/${examId}/${studentId}`),
           api.get(`/violations/${examId}/${studentId}`),
+          api.get(`/exams/${examId}/results/${studentId}`).catch(() => ({ data: null })),
         ]);
         setReport(reportRes.data);
         setViolations(violationsRes.data || []);
+        setExamResult(resultsRes.data);
       } catch (err) {
         setError(err?.response?.data?.detail ?? "Failed to load the report. It may not have been generated yet.");
       } finally {
@@ -146,6 +149,34 @@ const AdminReport = () => {
         {/* ── Report content ───────────────────────────────────────── */}
         {!loading && !error && report && (
           <>
+            {/* Score card (from /exams/{id}/results/{studentId}) */}
+            {examResult && (
+              <div style={{
+                backgroundColor: "#EEF2FF",
+                border: "1px solid #C7D2FE",
+                borderRadius: "12px",
+                padding: "20px 28px",
+                marginBottom: "20px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                display: "flex",
+                alignItems: "center",
+                gap: "16px",
+                flexWrap: "wrap",
+              }}>
+                <span style={{ fontSize: "28px" }}>🎯</span>
+                <div>
+                  <p style={{ margin: "0 0 4px", fontSize: "11px", fontWeight: 700, color: C.primary,
+                    textTransform: "uppercase", letterSpacing: "0.07em" }}>Quiz Score</p>
+                  <p style={{ margin: 0, fontSize: "22px", fontWeight: 800, color: C.text }}>
+                    {examResult.correct_answers}/{examResult.total_questions}
+                    <span style={{ fontSize: "16px", fontWeight: 600, color: C.primary, marginLeft: "10px" }}>
+                      ({examResult.score_percent}%)
+                    </span>
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Stats row */}
             <div style={{
               display: "grid",

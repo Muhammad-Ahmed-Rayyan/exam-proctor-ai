@@ -155,10 +155,24 @@ const AdminDashboard = () => {
           <span style={{ fontSize: "20px" }}>🛡️</span>
           <span style={{ fontWeight: 800, fontSize: "17px", color: C.text }}>Exam Proctor AI</span>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
           <span style={{ fontSize: "14px", color: C.muted }}>
             Hello, <strong style={{ color: C.text }}>{user?.name ?? "Admin"}</strong>
           </span>
+          <button
+            type="button"
+            onClick={() => navigate("/admin/create-exam")}
+            style={{
+              padding: "8px 16px", borderRadius: "8px", border: "none",
+              backgroundColor: hovered === "create" ? C.primaryD : C.primary,
+              color: "#fff", fontWeight: 700, fontSize: "13px", cursor: "pointer",
+              transition: "background 0.15s",
+            }}
+            onMouseEnter={() => setHovered("create")}
+            onMouseLeave={() => setHovered(null)}
+          >
+            + Create Exam
+          </button>
           <button
             onClick={handleLogout}
             type="button"
