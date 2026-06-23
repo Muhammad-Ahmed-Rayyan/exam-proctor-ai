@@ -89,3 +89,44 @@ def test_list_exams():
     assert isinstance(response.json(), list), (
         f"Expected a list, got: {type(response.json())}"
     )
+
+
+def test_update_and_delete_exam_as_admin():
+    """An admin should be able to update and delete an exam."""
+    headers = admin_auth_header()
+
+    # 1. Create an exam
+    create_res = client.post(
+        "/exams/",
+        json={"title": "Exam to Update", "duration_minutes": 45},
+        headers=headers,
+    )
+    assert create_res.status_code == 200, create_res.text
+    exam_id = create_res.json()["id"]
+
+    # 2. Patch/Update the exam
+    patch_res = client.patch(
+        f"/exams/{exam_id}",
+        json={"title": "Updated Title", "status": "active"},
+        headers=headers,
+    )
+    assert patch_res.status_code == 200, patch_res.text
+    updated_data = patch_res.json()
+    assert updated_data["title"] == "Updated Title"
+    assert updated_data["status"] == "active"
+    assert updated_data["duration_minutes"] == 45
+
+    # 3. Delete the exam
+    delete_res = client.delete(
+        f"/exams/{exam_id}",
+        headers=headers,
+    )
+    assert delete_res.status_code == 200, delete_res.text
+    assert delete_res.json() == {"message": "Exam deleted successfully"}
+
+    # 4. Try deleting nonexistent exam (404)
+    get_404_res = client.delete(
+        f"/exams/{exam_id}",
+        headers=headers,
+    )
+    assert get_404_res.status_code == 404

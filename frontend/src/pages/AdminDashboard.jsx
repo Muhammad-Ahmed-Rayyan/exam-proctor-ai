@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Clock, ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
 
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
@@ -50,6 +50,9 @@ const AdminDashboard = () => {
   const [expandedExamId, setExpandedExamId] = useState(null);
   const [studentsMap, setStudentsMap] = useState({});
   const [hovered, setHovered] = useState(null);
+  const [editingExamId, setEditingExamId] = useState(null);
+  const [editForm, setEditForm] = useState({ title: "", duration_minutes: 0, status: "" });
+  const [editError, setEditError] = useState("");
 
   const loadExams = async () => {
     try {
@@ -61,6 +64,47 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => { loadExams(); }, []);
+
+  const handleDeleteExam = async (examId) => {
+    if (!window.confirm("Delete this exam? This cannot be undone.")) return;
+    try {
+      await api.delete(`/exams/${examId}`);
+      setExams((prev) => prev.filter((exam) => exam.id !== examId));
+    } catch {
+      alert("Failed to delete exam. Please try again.");
+    }
+  };
+
+  const handleStartEdit = (exam) => {
+    setEditingExamId(exam.id);
+    setEditForm({
+      title: exam.title,
+      duration_minutes: exam.duration_minutes,
+      status: exam.status || "upcoming",
+    });
+    setEditError("");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingExamId(null);
+    setEditForm({ title: "", duration_minutes: 0, status: "" });
+    setEditError("");
+  };
+
+  const handleSaveEdit = async (e, examId) => {
+    e.preventDefault();
+    setEditError("");
+    try {
+      const res = await api.patch(`/exams/${examId}`, editForm);
+      const updatedExam = res.data;
+      setExams((prev) =>
+        prev.map((exam) => (exam.id === examId ? updatedExam : exam))
+      );
+      setEditingExamId(null);
+    } catch (err) {
+      setEditError(err?.response?.data?.detail ?? "Failed to save changes. Please check your inputs.");
+    }
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -295,7 +339,7 @@ const AdminDashboard = () => {
                         <span style={statusBadge(exam.status)}>{exam.status ?? "—"}</span>
                       </td>
                       <td style={{ padding: "14px 16px", fontSize: "13px", color: C.muted }}>{startTime}</td>
-                      <td style={{ padding: "14px 16px" }}>
+                      <td style={{ padding: "14px 16px", display: "flex", alignItems: "center", gap: "8px" }}>
                         <button
                           type="button"
                           style={{
@@ -318,8 +362,142 @@ const AdminDashboard = () => {
                             </>
                           )}
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => handleStartEdit(exam)}
+                          title="Edit Exam"
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: "6px",
+                            color: "#64748B",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteExam(exam.id)}
+                          title="Delete Exam"
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: "6px",
+                            color: "#DC2626",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
                       </td>
                     </tr>
+
+                    {/* Inline edit form */}
+                    {editingExamId === exam.id && (
+                      <tr key={`${exam.id}-edit`}>
+                        <td colSpan={5} style={{ padding: "0 16px 16px", borderBottom: `1px solid ${C.border}` }}>
+                          <div style={{
+                            backgroundColor: "#F8FAFC",
+                            padding: "20px",
+                            borderRadius: "8px",
+                            border: `1px solid ${C.border}`,
+                            marginTop: "8px",
+                          }}>
+                            <h4 style={{ margin: "0 0 16px", fontSize: "14px", fontWeight: 700, color: C.text }}>
+                              Edit Exam: {exam.title}
+                            </h4>
+                            <form onSubmit={(e) => handleSaveEdit(e, exam.id)} style={{
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: "16px",
+                              alignItems: "end",
+                            }}>
+                              <label style={{ fontSize: "13px", fontWeight: 600, color: C.text, display: "flex", flexDirection: "column", gap: "6px", flex: "1 1 200px" }}>
+                                Title
+                                <input
+                                  style={inputStyle}
+                                  type="text"
+                                  value={editForm.title}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                                  required
+                                />
+                              </label>
+
+                              <label style={{ fontSize: "13px", fontWeight: 600, color: C.text, display: "flex", flexDirection: "column", gap: "6px", width: "120px" }}>
+                                Duration (min)
+                                <input
+                                  style={inputStyle}
+                                  type="number"
+                                  value={editForm.duration_minutes}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, duration_minutes: Number(e.target.value) }))}
+                                  min="1"
+                                  required
+                                />
+                              </label>
+
+                              <label style={{ fontSize: "13px", fontWeight: 600, color: C.text, display: "flex", flexDirection: "column", gap: "6px", width: "150px" }}>
+                                Status
+                                <select
+                                  style={inputStyle}
+                                  value={editForm.status}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
+                                >
+                                  <option value="upcoming">Upcoming</option>
+                                  <option value="active">Active</option>
+                                  <option value="completed">Completed</option>
+                                </select>
+                              </label>
+
+                              <div style={{ display: "flex", gap: "10px" }}>
+                                <button
+                                  type="submit"
+                                  style={{
+                                    padding: "9px 16px",
+                                    borderRadius: "8px",
+                                    border: "none",
+                                    backgroundColor: C.accent,
+                                    color: "#FFFFFF",
+                                    fontWeight: 700,
+                                    fontSize: "13px",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={handleCancelEdit}
+                                  style={{
+                                    padding: "9px 16px",
+                                    borderRadius: "8px",
+                                    border: `1.5px solid ${C.border}`,
+                                    backgroundColor: C.surface,
+                                    color: C.text,
+                                    fontWeight: 600,
+                                    fontSize: "13px",
+                                    cursor: "pointer",
+                                  }}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </form>
+                            {editError && (
+                              <p style={{ color: C.danger, fontSize: "13px", marginTop: "12px", margin: 0 }}>
+                                {editError}
+                              </p>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
 
                     {/* Expandable student panel */}
                     {isExpanded && (

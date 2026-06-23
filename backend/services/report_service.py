@@ -50,10 +50,26 @@ def generate_report(exam_id: str, student_id: str):
     ]
     breakdown_str = ", ".join(breakdown_parts) if breakdown_parts else "none"
 
+    student_name = student_id
+    try:
+        student_res = supabase.table("users").select("name").eq("id", student_id).execute()
+        if student_res.data:
+            student_name = student_res.data[0].get("name", student_id)
+    except Exception:
+        pass
+
+    exam_title = exam_id
+    try:
+        exam_res = supabase.table("exams").select("title").eq("id", exam_id).execute()
+        if exam_res.data:
+            exam_title = exam_res.data[0].get("title", exam_id)
+    except Exception:
+        pass
+
     prompt = (
         f"You are an exam proctor writing an integrity summary for a specific student.\n"
-        f"Exam ID: {exam_id}\n"
-        f"Student ID: {student_id}\n"
+        f"Student: {student_name}\n"
+        f"Exam: {exam_title}\n"
         f"Total integrity violations recorded: {total_violations}\n"
         f"Violation breakdown: {breakdown_str}\n"
         f"Overall risk level: {risk_level}\n\n"

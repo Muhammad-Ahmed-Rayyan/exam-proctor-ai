@@ -49,8 +49,13 @@ def update_exam(exam_id: str, data: ExamUpdate):
         raise HTTPException(status_code=404, detail="Exam not found")
     return result.data[0]
 
-
 def delete_exam(exam_id: str):
+    # Delete related records first to avoid FK constraint errors
+    supabase.table("answers").delete().eq("exam_id", exam_id).execute()
+    supabase.table("violations").delete().eq("exam_id", exam_id).execute()
+    supabase.table("reports").delete().eq("exam_id", exam_id).execute()
+    supabase.table("questions").delete().eq("exam_id", exam_id).execute()
+    # Now delete the exam itself
     result = supabase.table("exams").delete().eq("id", exam_id).execute()
     if not result.data:
         raise HTTPException(status_code=404, detail="Exam not found")

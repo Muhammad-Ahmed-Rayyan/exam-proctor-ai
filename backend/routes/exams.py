@@ -49,7 +49,7 @@ def create_exam_route(data: ExamCreate, authorization: str = Header(...)):
     return create_exam(data, user["user_id"])
 
 
-@router.put("/{exam_id}", response_model=ExamOut)
+@router.patch("/{exam_id}", response_model=ExamOut)
 def update_exam_route(exam_id: str, data: ExamUpdate, authorization: str = Header(...)):
     user = _get_user_from_token(authorization)
     if user["role"] != "admin":
