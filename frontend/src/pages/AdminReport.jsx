@@ -39,6 +39,7 @@ const AdminReport = () => {
   const [report, setReport]         = useState(null);
   const [violations, setViolations] = useState([]);
   const [examResult, setExamResult] = useState(null);
+  const [result, setResult]         = useState(null);
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState("");
   const [btnHover, setBtnHover]     = useState(false);
@@ -56,6 +57,13 @@ const AdminReport = () => {
         setReport(reportRes.data);
         setViolations(violationsRes.data || []);
         setExamResult(resultsRes.data);
+        // Separate result state for the score card — fails silently
+        try {
+          const scoreRes = await api.get(`/exams/${examId}/results/${studentId}`);
+          setResult(scoreRes.data);
+        } catch {
+          // Non-fatal — score card simply won't render
+        }
       } catch (err) {
         setError(err?.response?.data?.detail ?? "Failed to load the report. It may not have been generated yet.");
       } finally {
@@ -176,6 +184,37 @@ const AdminReport = () => {
                 </div>
               </div>
             )}
+
+            {/* Exam Score card — color-coded by score_percent */}
+            {result && (() => {
+              const pct = result.score_percent ?? 0;
+              const scoreTheme = pct >= 70
+                ? { bg: "#DCFCE7", color: "#166534", border: "#BBF7D0" }
+                : pct >= 40
+                ? { bg: "#FEF9C3", color: "#854D0E", border: "#FDE68A" }
+                : { bg: "#FEE2E2", color: "#991B1B", border: "#FECACA" };
+              return (
+                <div style={{
+                  backgroundColor: scoreTheme.bg,
+                  border: `1px solid ${scoreTheme.border}`,
+                  borderRadius: "12px",
+                  padding: "20px 24px",
+                  marginBottom: "24px",
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+                }}>
+                  <p style={{ margin: "0 0 6px", fontSize: "11px", fontWeight: 700,
+                    color: scoreTheme.color, textTransform: "uppercase", letterSpacing: "0.07em" }}>
+                    Exam Score
+                  </p>
+                  <p style={{ margin: 0, fontSize: "26px", fontWeight: 800, color: scoreTheme.color }}>
+                    {result.correct_answers} / {result.total_questions} correct
+                    <span style={{ fontSize: "16px", fontWeight: 600, marginLeft: "10px" }}>
+                      ({result.score_percent}%)
+                    </span>
+                  </p>
+                </div>
+              );
+            })()}
 
             {/* Stats row */}
             <div style={{
