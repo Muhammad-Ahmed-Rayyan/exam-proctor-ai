@@ -42,14 +42,26 @@ def generate_report(exam_id: str, student_id: str):
     if not groq_api_key:
         raise HTTPException(status_code=500, detail="GROQ_API_KEY not configured")
 
+    # Build a readable breakdown string from the computed counts
+    breakdown_parts = [
+        f"{vtype.replace('_', ' ')}: {cnt}"
+        for vtype, cnt in counts.items()
+        if cnt > 0
+    ]
+    breakdown_str = ", ".join(breakdown_parts) if breakdown_parts else "none"
+
     prompt = (
-        "You are an exam integrity officer. A student completed an online exam.\n"
-        f"Violations detected: face_missing: {counts['face_missing']} times, "
-        f"multiple_faces: {counts['multiple_faces']} times, "
-        f"tab_switch: {counts['tab_switch']} times, "
-        f"focus_loss: {counts['focus_loss']} times.\n"
-        f"Total violations: {total_violations}. Risk level: {risk_level}.\n"
-        "Write a concise professional integrity report in 5-6 sentences."
+        f"You are an exam proctor writing an integrity summary for a specific student.\n"
+        f"Exam ID: {exam_id}\n"
+        f"Student ID: {student_id}\n"
+        f"Total integrity violations recorded: {total_violations}\n"
+        f"Violation breakdown: {breakdown_str}\n"
+        f"Overall risk level: {risk_level}\n\n"
+        "Write a concise 2-3 sentence plain-English integrity summary based strictly on "
+        "the data above. Use the actual numbers provided. "
+        "Do NOT use placeholders like [Insert ID], [Insert Date], or [Insert Student ID]. "
+        "Do NOT write an email, letter, or report with a subject line or date header. "
+        "Just write a short factual paragraph as a proctor would note it."
     )
 
     client = Groq(api_key=groq_api_key)
