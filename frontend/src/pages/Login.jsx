@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
@@ -25,6 +25,7 @@ const Login = () => {
   const [error, setError]       = useState("");
   const [focused, setFocused]   = useState(null);
   const [loading, setLoading]   = useState(false);
+  const [backHover, setBackHover] = useState(false);
 
   const inputStyle = (field) => ({
     width: "100%",
@@ -87,6 +88,30 @@ const Login = () => {
           border: `1px solid ${C.border}`,
         }}
       >
+        {/* Back Button */}
+        <button
+          type="button"
+          onClick={() => navigate("/")}
+          onMouseEnter={() => setBackHover(true)}
+          onMouseLeave={() => setBackHover(false)}
+          style={{
+            background: "none",
+            border: "none",
+            color: backHover ? "#0F172A" : "#64748B",
+            fontSize: "13px",
+            fontWeight: 500,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            padding: 0,
+            alignSelf: "flex-start",
+            transition: "color 0.15s",
+          }}
+        >
+          <ArrowLeft size={16} /> Back to Home
+        </button>
+
         {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: "4px" }}>
           <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
