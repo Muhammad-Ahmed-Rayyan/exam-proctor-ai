@@ -43,6 +43,7 @@ const ExamRoom = () => {
   const [questions, setQuestions]         = useState([]);
   const [answers, setAnswers]             = useState({});   // { [question_id]: selected_option }
   const [submitted, setSubmitted]         = useState(false);
+  const [score, setScore]                 = useState(null);
 
   /* ── Violation helpers ─────────────────────────────────────────────── */
   const triggerWarning = (type) => {
@@ -231,7 +232,15 @@ const ExamRoom = () => {
     }
   };
 
-  const handleSubmit = () => setSubmitted(true);
+  const handleSubmit = async () => {
+    setSubmitted(true);
+    try {
+      const res = await api.get(`/answers/${id}/score`);
+      setScore(res.data);
+    } catch {
+      // Score fetch failed — submitted message still shows without score
+    }
+  };
 
   const formatTime = (seconds) => {
     if (seconds === null) return "--:--";
@@ -383,7 +392,11 @@ const ExamRoom = () => {
                 backgroundColor: "#DCFCE7", border: "1px solid #BBF7D0",
                 textAlign: "center",
               }}>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: "16px", color: "#166534" }}>✅ Exam Submitted</p>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: "16px", color: "#166534" }}>
+                  {score
+                    ? `Exam Submitted - Score: ${score.correct_answers}/${score.total_questions} (${score.score_percent}%)`
+                    : "Exam Submitted"}
+                </p>
                 <p style={{ margin: "6px 0 0", fontSize: "13px", color: "#166534" }}>
                   Your answers have been saved. You may now close this tab.
                 </p>

@@ -90,3 +90,27 @@ def get_exam_results(
         "ai_summary":      ai_summary,
         "risk_level":      risk_level,
     }
+
+
+@router.get("/{exam_id}/score")
+def get_my_score(
+    exam_id: str,
+    authorization: str = Header(...),
+):
+    """
+    Student only — fetch the current student's own score for an exam.
+    Returns: { exam_id, student_id, correct_answers, total_questions, score_percent }
+    """
+    user = _get_user_from_token(authorization)
+    if user["role"] != "student":
+        raise HTTPException(status_code=403, detail="Student access required")
+
+    score = compute_score(exam_id, user["user_id"])
+
+    return {
+        "exam_id":         exam_id,
+        "student_id":      user["user_id"],
+        "correct_answers": score["correct_answers"],
+        "total_questions": score["total_questions"],
+        "score_percent":   score["score_percent"],
+    }
