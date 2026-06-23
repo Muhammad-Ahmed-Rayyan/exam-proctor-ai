@@ -1,18 +1,21 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Plus, CheckCircle } from "lucide-react";
 
 import api from "../utils/api";
+import Logo from "../components/Logo";
 
 const C = {
-  primary:  "#4F46E5",
-  primaryD: "#4338CA",
-  bg:       "#F8FAFC",
-  surface:  "#FFFFFF",
-  border:   "#E2E8F0",
-  text:     "#1E293B",
-  muted:    "#64748B",
-  danger:   "#DC2626",
-  success:  "#16A34A",
+  accent:  "#2563EB",
+  accentD: "#1D4ED8",
+  navy:    "#0F172A",
+  bg:      "#F1F5F9",
+  surface: "#FFFFFF",
+  border:  "#E2E8F0",
+  text:    "#0F172A",
+  muted:   "#64748B",
+  danger:  "#DC2626",
+  success: "#16A34A",
 };
 
 const inputStyle = {
@@ -119,26 +122,40 @@ const CreateExam = () => {
 
       {/* ── Navbar ──────────────────────────────────────────────────────── */}
       <nav style={{
-        backgroundColor: C.surface, borderBottom: `1px solid ${C.border}`,
-        padding: "0 32px", height: "60px", display: "flex", alignItems: "center",
-        justifyContent: "space-between", position: "sticky", top: 0, zIndex: 10,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+        backgroundColor: "#FFFFFF",
+        borderBottom: "1px solid #E2E8F0",
+        padding: "0 32px",
+        height: "60px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        position: "sticky",
+        top: 0,
+        zIndex: 10,
+        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "20px" }}>🛡️</span>
-          <span style={{ fontWeight: 800, fontSize: "17px", color: C.text }}>Exam Proctor AI</span>
-          <span style={{ color: C.border, margin: "0 6px" }}>›</span>
-          <span style={{ color: C.muted, fontSize: "14px" }}>Create Exam</span>
-        </div>
+        <Logo size="sm" />
         <button
           type="button"
           onClick={() => navigate("/admin/dashboard")}
+          onMouseEnter={() => setDoneHover(true)}
+          onMouseLeave={() => setDoneHover(false)}
           style={{
-            padding: "8px 16px", borderRadius: "8px", border: `1.5px solid ${C.border}`,
-            backgroundColor: C.surface, color: C.text, fontWeight: 600, fontSize: "13px", cursor: "pointer",
+            padding: "7px 14px",
+            borderRadius: "8px",
+            border: "1px solid #0F172A",
+            backgroundColor: doneHover ? "#F1F5F9" : "#FFFFFF",
+            color: "#0F172A",
+            fontWeight: 600,
+            fontSize: "13px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
+            transition: "background 0.15s",
           }}
         >
-          ← Back to Dashboard
+          <ArrowLeft size={14} /> Back to Dashboard
         </button>
       </nav>
 
@@ -156,7 +173,7 @@ const CreateExam = () => {
               backgroundColor: "#DCFCE7", border: "1px solid #BBF7D0",
               display: "flex", alignItems: "center", gap: "10px",
             }}>
-              <span style={{ fontSize: "18px" }}>✅</span>
+              <CheckCircle size={20} color={C.success} />
               <div>
                 <p style={{ margin: 0, fontWeight: 700, color: "#166534", fontSize: "14px" }}>
                   Exam created: &ldquo;{createdExam.title}&rdquo;
@@ -189,7 +206,7 @@ const CreateExam = () => {
                 type="submit"
                 style={{
                   padding: "11px 24px", borderRadius: "8px", border: "none", alignSelf: "flex-start",
-                  backgroundColor: examHover ? C.primaryD : C.primary,
+                  backgroundColor: examHover ? C.accentD : C.accent,
                   color: "#fff", fontWeight: 700, fontSize: "14px", cursor: "pointer",
                   transition: "background 0.15s",
                 }}
@@ -260,10 +277,10 @@ const CreateExam = () => {
                         style={{
                           display: "flex", alignItems: "center", gap: "6px",
                           padding: "8px 16px", borderRadius: "8px", cursor: "pointer",
-                          border: `2px solid ${qForm.correct_option === letter ? C.primary : C.border}`,
-                          backgroundColor: qForm.correct_option === letter ? "#EEF2FF" : C.surface,
+                          border: `2px solid ${qForm.correct_option === letter ? C.accent : C.border}`,
+                          backgroundColor: qForm.correct_option === letter ? "#EFF6FF" : C.surface,
                           fontWeight: 600, fontSize: "13px",
-                          color: qForm.correct_option === letter ? C.primary : C.text,
+                          color: qForm.correct_option === letter ? C.accent : C.text,
                           transition: "all 0.15s",
                         }}
                       >
@@ -273,7 +290,7 @@ const CreateExam = () => {
                           value={letter}
                           checked={qForm.correct_option === letter}
                           onChange={handleQChange}
-                          style={{ accentColor: C.primary }}
+                          style={{ accentColor: C.accent }}
                         />
                         {letter}
                       </label>
@@ -293,15 +310,22 @@ const CreateExam = () => {
                   disabled={qLoading}
                   style={{
                     padding: "11px 24px", borderRadius: "8px", border: "none", alignSelf: "flex-start",
-                    backgroundColor: addHover && !qLoading ? C.primaryD : C.primary,
+                    backgroundColor: addHover && !qLoading ? C.accentD : C.accent,
                     color: "#fff", fontWeight: 700, fontSize: "14px",
                     cursor: qLoading ? "not-allowed" : "pointer",
                     opacity: qLoading ? 0.7 : 1, transition: "background 0.15s",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px"
                   }}
                   onMouseEnter={() => setAddHover(true)}
                   onMouseLeave={() => setAddHover(false)}
                 >
-                  {qLoading ? "Adding…" : "+ Add Question"}
+                  {qLoading ? "Adding…" : (
+                    <>
+                      <Plus size={14} /> Add Question
+                    </>
+                  )}
                 </button>
               </form>
             </div>
@@ -367,9 +391,9 @@ const CreateExam = () => {
                 onClick={() => navigate("/admin/dashboard")}
                 style={{
                   padding: "13px 40px", borderRadius: "8px", border: "none",
-                  backgroundColor: doneHover ? C.primaryD : C.primary,
+                  backgroundColor: doneHover ? C.accentD : C.accent,
                   color: "#fff", fontWeight: 700, fontSize: "15px", cursor: "pointer",
-                  boxShadow: "0 4px 14px rgba(79,70,229,0.3)", transition: "background 0.15s",
+                  boxShadow: "0 4px 14px rgba(37,99,235,0.3)", transition: "background 0.15s",
                 }}
                 onMouseEnter={() => setDoneHover(true)}
                 onMouseLeave={() => setDoneHover(false)}

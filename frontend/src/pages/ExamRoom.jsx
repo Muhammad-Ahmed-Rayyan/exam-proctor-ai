@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import * as faceapi from "face-api.js";
+import { Shield, Clock, AlertTriangle, CheckCircle, Loader2, FileText } from "lucide-react";
 
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
+import Logo from "../components/Logo";
 
 /* ── Violation warning messages ───────────────────────────────────────── */
 const warningMessages = {
-  face_missing:   "⚠️ Warning: Face not detected. Please stay in frame.",
-  multiple_faces: "⚠️ Warning: Multiple faces detected.",
-  tab_switch:     "⚠️ Warning: Tab switch detected.",
-  focus_loss:     "⚠️ Warning: Please stay focused on the exam.",
+  face_missing:   "Face not detected. Please stay in frame.",
+  multiple_faces: "Multiple faces detected.",
+  tab_switch:     "Tab switch detected.",
+  focus_loss:     "Please stay focused on the exam.",
 };
 
 const ExamRoom = () => {
@@ -44,6 +46,7 @@ const ExamRoom = () => {
   const [answers, setAnswers]             = useState({});   // { [question_id]: selected_option }
   const [submitted, setSubmitted]         = useState(false);
   const [score, setScore]                 = useState(null);
+  const [submitHover, setSubmitHover]     = useState(false);
 
   /* ── Violation helpers ─────────────────────────────────────────────── */
   const triggerWarning = (type) => {
@@ -254,7 +257,7 @@ const ExamRoom = () => {
       ? "#DC2626"
       : remainingSeconds !== null && remainingSeconds < 600
       ? "#D97706"
-      : "#4F46E5";
+      : "#2563EB";
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: "#F8FAFC", fontFamily: "'Inter', sans-serif" }}>
@@ -264,14 +267,18 @@ const ExamRoom = () => {
           backgroundColor: "#DC2626",
           color: "#fff",
           padding: "14px 24px",
-          textAlign: "center",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: "8px",
           fontWeight: 700,
           fontSize: "15px",
           animation: "slideDown 0.25s ease",
           boxShadow: "0 2px 8px rgba(220,38,38,0.35)",
           letterSpacing: "0.01em",
         }}>
-          {warning}
+          <AlertTriangle size={18} />
+          <span>Warning: {warning}</span>
         </div>
       )}
 
@@ -283,11 +290,12 @@ const ExamRoom = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
       }}>
-        <div>
-          <span style={{ fontSize: "18px", marginRight: "8px" }}>🛡️</span>
-          <span style={{ fontWeight: 800, fontSize: "16px", color: "#1E293B" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <Logo size="sm" />
+          <span style={{ width: "1px", height: "20px", backgroundColor: "#E2E8F0" }} />
+          <span style={{ fontWeight: 700, fontSize: "15px", color: "#0F172A" }}>
             {exam?.title ?? "Exam Session"}
           </span>
           {examError && (
@@ -306,7 +314,7 @@ const ExamRoom = () => {
           border: `2px solid ${timerColor}`,
           backgroundColor: `${timerColor}12`,
         }}>
-          <span style={{ fontSize: "14px" }}>⏱</span>
+          <Clock size={16} color={timerColor} />
           <span style={{ fontWeight: 800, fontSize: "18px", color: timerColor, fontVariantNumeric: "tabular-nums" }}>
             {formatTime(remainingSeconds)}
           </span>
@@ -339,15 +347,32 @@ const ExamRoom = () => {
           alignItems: "center",
           gap: "8px",
         }}>
-          {modelLoading
-            ? "⏳ Loading face detection model…"
-            : faceCount === null
-            ? "⏳ Starting detection…"
-            : faceCount === 0
-            ? "⚠️ No face detected"
-            : faceCount === 1
-            ? "✅ Face detected"
-            : `⚠️ ${faceCount} faces detected`}
+          {modelLoading ? (
+            <>
+              <Loader2 size={16} style={{ animation: "spin 0.8s linear infinite" }} />
+              <span>Loading face detection model…</span>
+            </>
+          ) : faceCount === null ? (
+            <>
+              <Loader2 size={16} style={{ animation: "spin 0.8s linear infinite" }} />
+              <span>Starting detection…</span>
+            </>
+          ) : faceCount === 0 ? (
+            <>
+              <AlertTriangle size={16} />
+              <span>No face detected</span>
+            </>
+          ) : faceCount === 1 ? (
+            <>
+              <CheckCircle size={16} />
+              <span>Face detected</span>
+            </>
+          ) : (
+            <>
+              <AlertTriangle size={16} />
+              <span>{faceCount} faces detected</span>
+            </>
+          )}
         </div>
 
         <div style={{
@@ -405,11 +430,13 @@ const ExamRoom = () => {
               <button
                 onClick={handleSubmit}
                 type="button"
+                onMouseEnter={() => setSubmitHover(true)}
+                onMouseLeave={() => setSubmitHover(false)}
                 style={{
                   padding: "13px 36px", borderRadius: "8px", border: "none",
-                  backgroundColor: "#4F46E5", color: "#fff", fontWeight: 700,
+                  backgroundColor: submitHover ? "#1D4ED8" : "#2563EB", color: "#fff", fontWeight: 700,
                   fontSize: "15px", cursor: "pointer",
-                  boxShadow: "0 4px 14px rgba(79,70,229,0.3)", transition: "background 0.15s",
+                  boxShadow: "0 4px 14px rgba(37,99,235,0.3)", transition: "background 0.15s",
                 }}
               >
                 Submit Exam
@@ -439,10 +466,12 @@ const ExamRoom = () => {
               alignItems: "center",
               backgroundColor: "#F8FAFC",
             }}>
-              <p style={{ margin: 0, fontWeight: 700, fontSize: "14px", color: "#1E293B" }}>📝 Quiz</p>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: "14px", color: "#1E293B", display: "flex", alignItems: "center", gap: "6px" }}>
+                <FileText size={16} /> Quiz
+              </p>
               <span style={{
                 fontSize: "12px", fontWeight: 600, padding: "3px 10px",
-                borderRadius: "999px", backgroundColor: "#EEF2FF", color: "#4F46E5",
+                borderRadius: "999px", backgroundColor: "#EFF6FF", color: "#2563EB",
               }}>
                 {Object.keys(answers).length}/{questions.length} answered
               </span>
@@ -472,7 +501,7 @@ const ExamRoom = () => {
                     }}>
                       <span style={{
                         minWidth: "22px", height: "22px", borderRadius: "50%",
-                        backgroundColor: isAnswered ? "#4F46E5" : "#E2E8F0",
+                        backgroundColor: isAnswered ? "#2563EB" : "#E2E8F0",
                         color: isAnswered ? "#fff" : "#64748B",
                         display: "flex", alignItems: "center", justifyContent: "center",
                         fontSize: "11px", fontWeight: 800, flexShrink: 0, marginTop: "1px",
@@ -484,14 +513,14 @@ const ExamRoom = () => {
                     <div style={{ display: "flex", flexDirection: "column", gap: "6px", paddingLeft: "28px" }}>
                       {["A", "B", "C", "D"].map((letter) => (
                         <label
-                          key={letter}
-                          style={{
-                            display: "flex", alignItems: "center", gap: "8px",
-                            padding: "7px 12px", borderRadius: "8px", cursor: submitted ? "not-allowed" : "pointer",
-                            border: `1.5px solid ${selected === letter ? "#4F46E5" : "#E2E8F0"}`,
-                            backgroundColor: selected === letter ? "#EEF2FF" : "#FAFAFA",
-                            transition: "all 0.12s",
-                          }}
+                           key={letter}
+                           style={{
+                             display: "flex", alignItems: "center", gap: "8px",
+                             padding: "7px 12px", borderRadius: "8px", cursor: submitted ? "not-allowed" : "pointer",
+                             border: `1.5px solid ${selected === letter ? "#2563EB" : "#E2E8F0"}`,
+                             backgroundColor: selected === letter ? "#EFF6FF" : "#FAFAFA",
+                             transition: "all 0.12s",
+                           }}
                         >
                           <input
                             type="radio"
@@ -500,16 +529,16 @@ const ExamRoom = () => {
                             checked={selected === letter}
                             onChange={() => handleAnswer(q.id, letter)}
                             disabled={submitted}
-                            style={{ accentColor: "#4F46E5", flexShrink: 0 }}
+                            style={{ accentColor: "#2563EB", flexShrink: 0 }}
                           />
                           <span style={{
                             fontSize: "12px", fontWeight: 700,
-                            color: selected === letter ? "#4F46E5" : "#94A3B8",
+                            color: selected === letter ? "#2563EB" : "#94A3B8",
                             minWidth: "14px",
                           }}>
                             {letter}
                           </span>
-                          <span style={{ fontSize: "13px", color: selected === letter ? "#4F46E5" : "#1E293B", fontWeight: selected === letter ? 600 : 400 }}>
+                          <span style={{ fontSize: "13px", color: selected === letter ? "#2563EB" : "#1E293B", fontWeight: selected === letter ? 600 : 400 }}>
                             {optionMap[letter]}
                           </span>
                         </label>

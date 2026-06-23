@@ -1,25 +1,27 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
 import api from "../utils/api";
+import Logo from "../components/Logo";
 
 const C = {
-  primary:  "#4F46E5",
-  primaryD: "#4338CA",
-  bg:       "#F8FAFC",
-  surface:  "#FFFFFF",
-  border:   "#E2E8F0",
-  text:     "#1E293B",
-  muted:    "#64748B",
-  danger:   "#DC2626",
+  accent:  "#2563EB",
+  accentH: "#1D4ED8",
+  bg:      "#F1F5F9",
+  surface: "#FFFFFF",
+  border:  "#E2E8F0",
+  text:    "#0F172A",
+  muted:   "#64748B",
+  danger:  "#DC2626",
 };
 
 const Register = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "student" });
-  const [error, setError]     = useState("");
-  const [focused, setFocused] = useState(null);
-  const [btnHover, setBtnHover] = useState(false);
+  const [form, setForm]         = useState({ name: "", email: "", password: "", role: "student" });
+  const [error, setError]       = useState("");
+  const [focused, setFocused]   = useState(null);
+  const [loading, setLoading]   = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -29,11 +31,14 @@ const Register = () => {
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
+    setLoading(true);
     try {
       await api.post("/auth/register", form);
       navigate("/login");
     } catch (err) {
       setError("Registration failed. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -41,7 +46,7 @@ const Register = () => {
     width: "100%",
     padding: "11px 14px",
     borderRadius: "8px",
-    border: `1.5px solid ${focused === field ? C.primary : C.border}`,
+    border: `1.5px solid ${focused === field ? C.accent : C.border}`,
     fontSize: "14px",
     outline: "none",
     color: C.text,
@@ -49,20 +54,27 @@ const Register = () => {
     transition: "border-color 0.15s",
     marginTop: "6px",
     display: "block",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
   });
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+    <div style={{
+      minHeight: "100vh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: C.bg,
       padding: "24px",
-      background: "linear-gradient(135deg, #EEF2FF 0%, #F8FAFC 100%)" }}>
-
+      fontFamily: "'Inter', sans-serif",
+    }}>
       <form
         onSubmit={handleSubmit}
         style={{
           backgroundColor: C.surface,
           padding: "40px 36px",
           borderRadius: "16px",
-          boxShadow: "0 8px 32px rgba(79,70,229,0.10), 0 1px 4px rgba(0,0,0,0.06)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)",
           width: "100%",
           maxWidth: "420px",
           display: "flex",
@@ -71,9 +83,11 @@ const Register = () => {
           border: `1px solid ${C.border}`,
         }}
       >
-        {/* Logo / Title */}
+        {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: "4px" }}>
-          <div style={{ fontSize: "36px", marginBottom: "8px" }}>🎓</div>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+            <Logo size="lg" />
+          </div>
           <h2 style={{ fontSize: "22px", fontWeight: 800, color: C.text, margin: 0 }}>Create an account</h2>
           <p style={{ color: C.muted, fontSize: "14px", marginTop: "6px" }}>Join Exam Proctor AI today</p>
         </div>
@@ -151,27 +165,36 @@ const Register = () => {
 
         <button
           type="submit"
+          disabled={loading}
           style={{
             padding: "13px",
             borderRadius: "8px",
             border: "none",
-            backgroundColor: btnHover ? C.primaryD : C.primary,
+            backgroundColor: loading ? "#93C5FD" : C.accent,
             color: "#fff",
             fontWeight: 700,
             fontSize: "15px",
-            cursor: "pointer",
+            cursor: loading ? "not-allowed" : "pointer",
             transition: "background 0.15s",
             width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+            fontFamily: "inherit",
           }}
-          onMouseEnter={() => setBtnHover(true)}
-          onMouseLeave={() => setBtnHover(false)}
         >
-          Create Account
+          {loading ? (
+            <>
+              <Loader2 size={16} style={{ animation: "spin 0.8s linear infinite" }} />
+              Creating account...
+            </>
+          ) : "Create Account"}
         </button>
 
         <p style={{ textAlign: "center", fontSize: "14px", color: C.muted, margin: 0 }}>
           Already have an account?{" "}
-          <Link to="/login" style={{ color: C.primary, fontWeight: 600, textDecoration: "none" }}>
+          <Link to="/login" style={{ color: C.accent, fontWeight: 600, textDecoration: "none" }}>
             Login
           </Link>
         </p>

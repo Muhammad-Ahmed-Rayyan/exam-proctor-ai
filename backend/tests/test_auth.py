@@ -73,6 +73,10 @@ def test_login_valid_credentials():
     assert "access_token" in data
     assert "role"         in data
     assert "user_id"      in data
+    assert "name"         in data
+    assert "email"        in data
+    assert data["name"] == "Test User"
+    assert data["email"] == email
 
 
 def test_login_invalid_password():

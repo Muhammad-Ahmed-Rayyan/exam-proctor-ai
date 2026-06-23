@@ -1,18 +1,23 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { ArrowLeft, Bot, Target, AlertTriangle, Loader2 } from "lucide-react";
 
 import api from "../utils/api";
+import Logo from "../components/Logo";
 
 const C = {
-  primary:  "#4F46E5",
-  bg:       "#F8FAFC",
-  surface:  "#FFFFFF",
-  border:   "#E2E8F0",
-  text:     "#1E293B",
-  muted:    "#64748B",
-  danger:   "#DC2626",
-  success:  "#16A34A",
-  warning:  "#D97706",
+  accent:  "#2563EB",
+  accentH: "#1D4ED8",
+  navy:    "#0F172A",
+  bg:      "#F1F5F9",
+  surface: "#FFFFFF",
+  border:  "#E2E8F0",
+  text:    "#0F172A",
+  muted:   "#64748B",
+  danger:  "#DC2626",
+  success: "#16A34A",
+  warning: "#D97706",
+  primary: "#2563EB",
 };
 
 const riskConfig = {
@@ -78,19 +83,16 @@ const AdminReport = () => {
 
       {/* ── Narrow top bar ─────────────────────────────────────────── */}
       <div style={{
-        backgroundColor: C.surface,
-        borderBottom: `1px solid ${C.border}`,
+        backgroundColor: "#FFFFFF",
+        borderBottom: "1px solid #E2E8F0",
         padding: "0 32px",
         height: "56px",
         display: "flex",
         alignItems: "center",
         gap: "10px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
       }}>
-        <span style={{ fontSize: "18px" }}>🛡️</span>
-        <span style={{ fontWeight: 800, color: C.text, fontSize: "16px" }}>Exam Proctor AI</span>
-        <span style={{ color: C.border, margin: "0 4px" }}>›</span>
-        <span style={{ color: C.muted, fontSize: "14px" }}>Report</span>
+        <Logo size="sm" />
       </div>
 
       <main style={{ maxWidth: "800px", margin: "0 auto", padding: "36px 24px" }}>
@@ -110,11 +112,14 @@ const AdminReport = () => {
             cursor: "pointer",
             marginBottom: "28px",
             transition: "background 0.15s",
+            display: "flex",
+            alignItems: "center",
+            gap: "6px",
           }}
           onMouseEnter={() => setBtnHover(true)}
           onMouseLeave={() => setBtnHover(false)}
         >
-          ← Back to Dashboard
+          <ArrowLeft size={15} /> Back to Dashboard
         </button>
 
         {/* Page heading */}
@@ -165,7 +170,9 @@ const AdminReport = () => {
             textAlign: "center", border: `1px solid ${C.border}`,
             boxShadow: "0 1px 3px rgba(0,0,0,0.10)",
           }}>
-            <div style={{ fontSize: "40px", marginBottom: "16px" }}>⏳</div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+              <Loader2 size={32} style={{ animation: "spin 0.8s linear infinite", color: C.muted }} />
+            </div>
             <p style={{ color: C.muted }}>Fetching report data…</p>
           </div>
         )}
@@ -177,7 +184,9 @@ const AdminReport = () => {
             border: `1px solid #FECACA`,
             boxShadow: "0 1px 3px rgba(0,0,0,0.10)",
           }}>
-            <p style={{ fontWeight: 700, color: C.danger, marginBottom: "6px" }}>⚠ Report Unavailable</p>
+            <p style={{ fontWeight: 700, color: C.danger, marginBottom: "6px", display: "flex", alignItems: "center", gap: "6px" }}>
+              <AlertTriangle size={16} /> Report Unavailable
+            </p>
             <p style={{ color: "#7F1D1D", fontSize: "14px", margin: 0 }}>{error}</p>
           </div>
         )}
@@ -233,8 +242,9 @@ const AdminReport = () => {
               boxShadow: "0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)",
             }}>
               <p style={{ margin: "0 0 14px", fontSize: "13px", fontWeight: 700, color: C.muted,
-                textTransform: "uppercase", letterSpacing: "0.06em" }}>
-                🤖 AI-Generated Summary
+                textTransform: "uppercase", letterSpacing: "0.06em",
+                display: "flex", alignItems: "center", gap: "6px" }}>
+                <Bot size={15} /> AI-Generated Summary
               </p>
               <p style={{ margin: 0, fontSize: "15px", lineHeight: 1.75, color: C.text }}>
                 {report.ai_summary ?? "No summary available."}
@@ -281,7 +291,7 @@ const AdminReport = () => {
                       {/* Colored dot */}
                       <div style={{
                         width: "10px", height: "10px", borderRadius: "50%",
-                        backgroundColor: C.primary, marginTop: "5px", flexShrink: 0,
+                        backgroundColor: C.accent, marginTop: "5px", flexShrink: 0,
                       }} />
                       <div>
                         <p style={{ margin: 0, fontWeight: 700, fontSize: "14px", color: C.text }}>

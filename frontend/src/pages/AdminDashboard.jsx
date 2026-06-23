@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Plus, Clock, ChevronDown, ChevronUp } from "lucide-react";
 
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
+import Logo from "../components/Logo";
 
 const C = {
-  primary:  "#4F46E5",
-  primaryD: "#4338CA",
-  bg:       "#F8FAFC",
-  surface:  "#FFFFFF",
-  border:   "#E2E8F0",
-  text:     "#1E293B",
-  muted:    "#64748B",
-  danger:   "#DC2626",
-  success:  "#16A34A",
+  accent:  "#2563EB",
+  accentH: "#1D4ED8",
+  navy:    "#0F172A",
+  bg:      "#F1F5F9",
+  surface: "#FFFFFF",
+  border:  "#E2E8F0",
+  text:    "#0F172A",
+  muted:   "#64748B",
+  danger:  "#DC2626",
+  success: "#16A34A",
 };
 
 const statusBadge = (status) => {
@@ -113,7 +116,7 @@ const AdminDashboard = () => {
     padding: "10px 18px",
     borderRadius: "8px",
     border: "none",
-    backgroundColor: hovered === id ? C.primaryD : C.primary,
+    backgroundColor: hovered === id ? C.accentH : C.accent,
     color: "#fff",
     fontWeight: 700,
     fontSize: "13px",
@@ -139,8 +142,8 @@ const AdminDashboard = () => {
 
       {/* ── Navbar ─────────────────────────────────────────────────── */}
       <nav style={{
-        backgroundColor: C.surface,
-        borderBottom: `1px solid ${C.border}`,
+        backgroundColor: "#FFFFFF",
+        borderBottom: "1px solid #E2E8F0",
         padding: "0 32px",
         display: "flex",
         alignItems: "center",
@@ -149,38 +152,36 @@ const AdminDashboard = () => {
         position: "sticky",
         top: 0,
         zIndex: 10,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "20px" }}>🛡️</span>
-          <span style={{ fontWeight: 800, fontSize: "17px", color: C.text }}>Exam Proctor AI</span>
-        </div>
+        <Logo size="sm" />
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <span style={{ fontSize: "14px", color: C.muted }}>
-            Hello, <strong style={{ color: C.text }}>{user?.name ?? "Admin"}</strong>
+          <span style={{ fontSize: "14px", color: "#0F172A" }}>
+            Hello, <strong style={{ color: "#0F172A" }}>{user?.name || ""}</strong>
           </span>
           <button
             type="button"
             onClick={() => navigate("/admin/create-exam")}
             style={{
-              padding: "8px 16px", borderRadius: "8px", border: "none",
-              backgroundColor: hovered === "create" ? C.primaryD : C.primary,
+              padding: "7px 14px", borderRadius: "8px", border: "none",
+              backgroundColor: hovered === "create" ? C.accentH : C.accent,
               color: "#fff", fontWeight: 700, fontSize: "13px", cursor: "pointer",
               transition: "background 0.15s",
+              display: "flex", alignItems: "center", gap: "5px",
             }}
             onMouseEnter={() => setHovered("create")}
             onMouseLeave={() => setHovered(null)}
           >
-            + Create Exam
+            <Plus size={14} /> Create Exam
           </button>
           <button
             onClick={handleLogout}
             type="button"
             style={{
-              padding: "8px 16px", borderRadius: "8px",
-              border: `1.5px solid ${C.border}`,
-              backgroundColor: hovered === "logout" ? "#F1F5F9" : C.surface,
-              color: C.text, fontWeight: 600, fontSize: "13px", cursor: "pointer",
+              padding: "7px 16px", borderRadius: "8px",
+              border: "1px solid #0F172A",
+              backgroundColor: hovered === "logout" ? "#F1F5F9" : "#FFFFFF",
+              color: "#0F172A", fontWeight: 600, fontSize: "13px", cursor: "pointer",
               transition: "background 0.15s",
             }}
             onMouseEnter={() => setHovered("logout")}
@@ -286,7 +287,9 @@ const AdminDashboard = () => {
                         {exam.title}
                       </td>
                       <td style={{ padding: "14px 16px", fontSize: "14px", color: C.muted }}>
-                        ⏱ {exam.duration_minutes} min
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+                          <Clock size={14} /> {exam.duration_minutes} min
+                        </span>
                       </td>
                       <td style={{ padding: "14px 16px" }}>
                         <span style={statusBadge(exam.status)}>{exam.status ?? "—"}</span>
@@ -295,12 +298,25 @@ const AdminDashboard = () => {
                       <td style={{ padding: "14px 16px" }}>
                         <button
                           type="button"
-                          style={isExpanded ? btnGhost(btnId) : btnPrimary(btnId)}
+                          style={{
+                            ... (isExpanded ? btnGhost(btnId) : btnPrimary(btnId)),
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px"
+                          }}
                           onClick={() => handleViewStudents(exam)}
                           onMouseEnter={() => setHovered(btnId)}
                           onMouseLeave={() => setHovered(null)}
                         >
-                          {isExpanded ? "▲ Hide" : "▼ View Students"}
+                          {isExpanded ? (
+                            <>
+                              <ChevronUp size={14} /> Hide
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown size={14} /> View Students
+                            </>
+                          )}
                         </button>
                       </td>
                     </tr>
@@ -338,7 +354,7 @@ const AdminDashboard = () => {
                                     {/* Avatar */}
                                     <div style={{
                                       width: "38px", height: "38px", borderRadius: "50%",
-                                      backgroundColor: "#EEF2FF", color: C.primary,
+                                      backgroundColor: "#EFF6FF", color: C.accent,
                                       display: "flex", alignItems: "center", justifyContent: "center",
                                       fontWeight: 800, fontSize: "15px", flexShrink: 0,
                                     }}>

@@ -1,18 +1,20 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
+import Logo from "../components/Logo";
 
 const C = {
-  primary:  "#4F46E5",
-  primaryD: "#4338CA",
-  bg:       "#F8FAFC",
-  surface:  "#FFFFFF",
-  border:   "#E2E8F0",
-  text:     "#1E293B",
-  muted:    "#64748B",
-  danger:   "#DC2626",
+  accent:  "#2563EB",
+  accentH: "#1D4ED8",
+  bg:      "#F1F5F9",
+  surface: "#FFFFFF",
+  border:  "#E2E8F0",
+  text:    "#0F172A",
+  muted:   "#64748B",
+  danger:  "#DC2626",
 };
 
 const Login = () => {
@@ -22,13 +24,13 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [error, setError]       = useState("");
   const [focused, setFocused]   = useState(null);
-  const [btnHover, setBtnHover] = useState(false);
+  const [loading, setLoading]   = useState(false);
 
   const inputStyle = (field) => ({
     width: "100%",
     padding: "11px 14px",
     borderRadius: "8px",
-    border: `1.5px solid ${focused === field ? C.primary : C.border}`,
+    border: `1.5px solid ${focused === field ? C.accent : C.border}`,
     fontSize: "14px",
     outline: "none",
     color: C.text,
@@ -36,15 +38,18 @@ const Login = () => {
     transition: "border-color 0.15s",
     marginTop: "6px",
     display: "block",
+    boxSizing: "border-box",
+    fontFamily: "inherit",
   });
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError("");
+    setLoading(true);
     try {
       const response = await api.post("/auth/login", { email, password });
-      const { access_token, role, user_id } = response.data;
-      login(access_token, role, user_id);
+      const { access_token, role, user_id, name } = response.data;
+      login(access_token, role, user_id, email, name);
       if (role === "admin") {
         navigate("/admin/dashboard");
       } else {
@@ -52,21 +57,28 @@ const Login = () => {
       }
     } catch (err) {
       setError("Login failed. Please check your credentials.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
-      backgroundColor: C.bg, padding: "24px",
-      background: "linear-gradient(135deg, #EEF2FF 0%, #F8FAFC 100%)" }}>
-
+    <div style={{
+      minHeight: "100vh",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      backgroundColor: C.bg,
+      padding: "24px",
+      fontFamily: "'Inter', sans-serif",
+    }}>
       <form
         onSubmit={handleSubmit}
         style={{
           backgroundColor: C.surface,
           padding: "40px 36px",
           borderRadius: "16px",
-          boxShadow: "0 8px 32px rgba(79,70,229,0.10), 0 1px 4px rgba(0,0,0,0.06)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04)",
           width: "100%",
           maxWidth: "420px",
           display: "flex",
@@ -75,9 +87,11 @@ const Login = () => {
           border: `1px solid ${C.border}`,
         }}
       >
-        {/* Logo / Title */}
+        {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: "4px" }}>
-          <div style={{ fontSize: "36px", marginBottom: "8px" }}>🛡️</div>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+            <Logo size="lg" />
+          </div>
           <h2 style={{ fontSize: "22px", fontWeight: 800, color: C.text, margin: 0 }}>Welcome back</h2>
           <p style={{ color: C.muted, fontSize: "14px", marginTop: "6px" }}>Sign in to your account</p>
         </div>
@@ -121,27 +135,36 @@ const Login = () => {
 
         <button
           type="submit"
+          disabled={loading}
           style={{
             padding: "13px",
             borderRadius: "8px",
             border: "none",
-            backgroundColor: btnHover ? C.primaryD : C.primary,
+            backgroundColor: loading ? "#93C5FD" : C.accent,
             color: "#fff",
             fontWeight: 700,
             fontSize: "15px",
-            cursor: "pointer",
+            cursor: loading ? "not-allowed" : "pointer",
             transition: "background 0.15s",
             width: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+            fontFamily: "inherit",
           }}
-          onMouseEnter={() => setBtnHover(true)}
-          onMouseLeave={() => setBtnHover(false)}
         >
-          Sign In
+          {loading ? (
+            <>
+              <Loader2 size={16} style={{ animation: "spin 0.8s linear infinite" }} />
+              Signing in...
+            </>
+          ) : "Sign In"}
         </button>
 
         <p style={{ textAlign: "center", fontSize: "14px", color: C.muted, margin: 0 }}>
           Don&apos;t have an account?{" "}
-          <Link to="/register" style={{ color: C.primary, fontWeight: 600, textDecoration: "none" }}>
+          <Link to="/register" style={{ color: C.accent, fontWeight: 600, textDecoration: "none" }}>
             Register
           </Link>
         </p>

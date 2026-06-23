@@ -1,20 +1,23 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Clock, CalendarDays, FileText } from "lucide-react";
 
 import api from "../utils/api";
 import { useAuth } from "../context/AuthContext";
+import Logo from "../components/Logo";
 
 const C = {
-  primary:  "#4F46E5",
-  primaryD: "#4338CA",
-  bg:       "#F8FAFC",
-  surface:  "#FFFFFF",
-  border:   "#E2E8F0",
-  text:     "#1E293B",
-  muted:    "#64748B",
-  danger:   "#DC2626",
-  success:  "#16A34A",
-  warning:  "#D97706",
+  accent:  "#2563EB",
+  accentH: "#1D4ED8",
+  navy:    "#0F172A",
+  bg:      "#F1F5F9",
+  surface: "#FFFFFF",
+  border:  "#E2E8F0",
+  text:    "#0F172A",
+  muted:   "#64748B",
+  danger:  "#DC2626",
+  success: "#16A34A",
+  warning: "#D97706",
 };
 
 const statusStyle = (status) => {
@@ -64,8 +67,8 @@ const StudentDashboard = () => {
 
       {/* ── Navbar ─────────────────────────────────────────────────── */}
       <nav style={{
-        backgroundColor: C.surface,
-        borderBottom: `1px solid ${C.border}`,
+        backgroundColor: "#FFFFFF",
+        borderBottom: "1px solid #E2E8F0",
         padding: "0 32px",
         display: "flex",
         alignItems: "center",
@@ -74,25 +77,22 @@ const StudentDashboard = () => {
         position: "sticky",
         top: 0,
         zIndex: 10,
-        boxShadow: "0 1px 3px rgba(0,0,0,0.06)",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-          <span style={{ fontSize: "20px" }}>🛡️</span>
-          <span style={{ fontWeight: 800, fontSize: "17px", color: C.text }}>Exam Proctor AI</span>
-        </div>
+        <Logo size="sm" />
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <span style={{ fontSize: "14px", color: C.muted }}>
-            Hello, <strong style={{ color: C.text }}>{user?.name ?? "Student"}</strong>
+          <span style={{ fontSize: "14px", color: "#0F172A" }}>
+            Hello, <strong style={{ color: "#0F172A" }}>{user?.name || ""}</strong>
           </span>
           <button
             onClick={handleLogout}
             type="button"
             style={{
-              padding: "8px 16px",
+              padding: "7px 16px",
               borderRadius: "8px",
-              border: `1.5px solid ${C.border}`,
-              backgroundColor: hovered === "logout" ? "#F1F5F9" : C.surface,
-              color: C.text,
+              border: "1px solid #0F172A",
+              backgroundColor: hovered === "logout" ? "#F1F5F9" : "#FFFFFF",
+              color: "#0F172A",
               fontWeight: 600,
               fontSize: "13px",
               cursor: "pointer",
@@ -132,7 +132,9 @@ const StudentDashboard = () => {
             border: `1px solid ${C.border}`,
             boxShadow: "0 1px 3px rgba(0,0,0,0.10)",
           }}>
-            <div style={{ fontSize: "48px", marginBottom: "16px" }}>📋</div>
+            <div style={{ display: "flex", justifyContent: "center", marginBottom: "16px" }}>
+              <FileText size={48} color={C.muted} />
+            </div>
             <p style={{ color: C.muted, fontSize: "16px" }}>No exams available at the moment.</p>
           </div>
         )}
@@ -155,9 +157,9 @@ const StudentDashboard = () => {
                   backgroundColor: C.surface,
                   borderRadius: "12px",
                   padding: "24px",
-                  border: `1px solid ${isHovered ? "#C7D2FE" : C.border}`,
+                  border: `1px solid ${isHovered ? "#BFDBFE" : C.border}`,
                   boxShadow: isHovered
-                    ? "0 4px 20px rgba(79,70,229,0.12)"
+                    ? "0 4px 20px rgba(37,99,235,0.10)"
                     : "0 1px 3px rgba(0,0,0,0.10), 0 1px 2px rgba(0,0,0,0.06)",
                   display: "flex",
                   flexDirection: "column",
@@ -176,13 +178,14 @@ const StudentDashboard = () => {
 
                 <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
                   <span style={{ fontSize: "12px", padding: "4px 10px", borderRadius: "999px",
-                    backgroundColor: "#EEF2FF", color: C.primary, fontWeight: 600 }}>
-                    ⏱ {exam.duration_minutes} min
+                    backgroundColor: "#EFF6FF", color: C.accent, fontWeight: 600,
+                    display: "flex", alignItems: "center", gap: "4px" }}>
+                    <Clock size={11} /> {exam.duration_minutes} min
                   </span>
                 </div>
 
-                <p style={{ fontSize: "13px", color: C.muted, margin: 0 }}>
-                  🗓 {startTime}
+                <p style={{ fontSize: "13px", color: C.muted, margin: 0, display: "flex", alignItems: "center", gap: "5px" }}>
+                  <CalendarDays size={13} /> {startTime}
                 </p>
 
                 <Link
@@ -192,7 +195,7 @@ const StudentDashboard = () => {
                     textAlign: "center",
                     padding: "11px",
                     borderRadius: "8px",
-                    backgroundColor: C.primary,
+                    backgroundColor: isHovered ? C.accentH : C.accent,
                     color: "#fff",
                     fontWeight: 700,
                     fontSize: "14px",

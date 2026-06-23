@@ -21,6 +21,8 @@ class TokenResponse(BaseModel):
     token_type: str
     role: Literal["student", "admin"]
     user_id: str
+    name: Optional[str] = None
+    email: Optional[str] = None
 
 
 class UserOut(BaseModel):

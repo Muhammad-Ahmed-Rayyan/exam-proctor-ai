@@ -51,7 +51,7 @@ def register_user(data: UserRegister):
 def login_user(data: UserLogin):
     result = (
         supabase.table("users")
-        .select("id, email, password_hash, role")
+        .select("id, name, email, password_hash, role")
         .eq("email", data.email)
         .execute()
     )
@@ -71,4 +71,6 @@ def login_user(data: UserLogin):
         "token_type": "bearer",
         "role": user["role"],
         "user_id": user["id"],
+        "name": user.get("name"),
+        "email": user.get("email"),
     }
