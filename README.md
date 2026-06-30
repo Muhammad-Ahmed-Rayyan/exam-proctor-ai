@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://github.com/Muhammad-Ahmed-Rayyan/GazeAware/blob/main/exam-proctor-ai.png" width="500">
+  <img src="https://github.com/Muhammad-Ahmed-Rayyan/exam-proctor-ai/blob/main/exam-proctor-ai.png" width="500">
   
   #
    
